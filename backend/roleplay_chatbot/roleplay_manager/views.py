@@ -39,6 +39,7 @@ class Registraion(APIView):
                 if CustomUser.objects.filter(email=email.lower()):
                     return Response({'error':"Email already used"})
                 user = serializer.save()
+                self.send_email_verification(serializer, user)
                 refresh = RefreshToken.for_user(user)
                 return Response({"message": 'success', 'data':serializer.data, 'refresh': str(refresh)
                         , 'access': str(refresh.access_token)}, status=status.HTTP_200_OK)
@@ -50,6 +51,29 @@ class Registraion(APIView):
             logger.error('Field error data not valid')
             return Response({"message": "Field error data not valid", "data": serializer.errors},
                         status=status.HTTP_400_BAD_REQUEST)
+    
+    def send_email_verification(self, serializer, user):
+            if not user.email_confirmation:
+                expiration_time= timezone.now() + timezone.timedelta(minutes=30) 
+                title = 'Email confirmation mail'
+                email = user.email
+                token = str(uuid.uuid4())
+                encoded_email = email.encode('utf_16', 'strict').hex() 
+                token_create=PasswordResetRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
+                # urls = f"deploymentIP/email_confirmation/{token}/{encoded_email}/"
+                if settings.DEBUG:
+                    urls = f"http://localhost:8000/email_confirmation/{token}/{encoded_email}/"
+                if token_create:
+                    body_html = render_to_string(
+                            'email_confirmation.html',
+                            {'name': user.full_name , 'token':token, 'email':email.encode('utf_16','strict'), 'url':urls}
+                        )
+                    body_html += ''
+                    result = send_email(title, body_html, [email])
+                    if result:
+                        return Response({'message':'We have sent you a link on email please verify', 'user':serializer.data,},status=status.HTTP_200_OK,)
+                return Response({'error':'Error while sending  email for email confirmation', 'user':serializer.data,},status=status.HTTP_200_OK,)
+            return Response({'message':'Email already verified!','user':serializer.data,},status=status.HTTP_200_OK)  
 
 
 class LoginView(APIView):
@@ -122,16 +146,14 @@ class ForgetPassword(APIView):
                             {'name': user.full_name , 'token':token, 'url':urls}
                         )
                     body_html += ''
-                    # result = send_email(title, body_html, [email])
-                    print(body_html)
+                    result = send_email(title, body_html, [email])
                     return Response({'message':'success'},status=status.HTTP_200_OK,)
 
             return Response({'error':'Email does not exists!'},status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
             print(error)
             msg = "Error while sending  email for forgot password"
-            return Response({"error": msg},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
 
             
 class ResetPassword(APIView):
@@ -151,13 +173,11 @@ class ResetPassword(APIView):
         password_reset = PasswordResetRequest.objects.get(token=request.data['token'])
         serializer = ResetPasswordSerializer(data = request.data)
         try:
-            breakpoint()
             if password_reset.expiration_time < timezone.now():
                 return Response({'error':'password_reset_expired'})
             if serializer.is_valid():
                 email = serializer.data.get('email')
                 new_password = serializer.data.get('new_password')
-                confirm_password = serializer.data.get('confirm_password')
                 if email:
                     user = CustomUser.objects.filter(email=email).first()
                     if user is None:

@@ -86,18 +86,21 @@ ASGI_APPLICATION = "roleplay_chatbot.asgi.application"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-    # 'default': {
-    #         'ENGINE': 'django.db.backends.postgresql',
-    #         'NAME': os.environ.get('DATABASE_NAME'),
-    #         'USER': os.environ.get('DATABASE_USER'),
-    #         'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
-    #         'HOST': os.environ.get('DATABASE_HOST'),
-    #         'PORT': os.environ.get('DATABASE_PORT', 5432),
+    # For SQLite
+    # "default": {
+    #     "ENGINE": "django.db.backends.sqlite3",
+    #     "NAME": BASE_DIR / "db.sqlite3",
     # }
+
+    # For PostgreSQL
+    'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DATABASE_NAME'),
+            'USER': os.environ.get('DATABASE_USER'),
+            'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+            'HOST': os.environ.get('DATABASE_HOST'),
+            'PORT': os.environ.get('DATABASE_PORT', 5432),
+    }
 }
 
 SIMPLE_JWT={
@@ -158,11 +161,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media','image')
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# # Email configuration 
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = os.environ['EMAIL_USER']
-# EMAIL_HOST_PASSWORD = os.environ['EMAIL_PASS']
-# EMAIL_USE_SSL = False
+# Email configuration 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
+EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
+EMAIL_USE_SSL = False

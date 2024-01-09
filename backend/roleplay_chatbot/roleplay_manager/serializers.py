@@ -67,12 +67,11 @@ class ForgotPasswordSerializer(serializers.ModelSerializer):
 
 class ResetPasswordSerializer(serializers.Serializer):
 
-    email = serializers.CharField(label='email', required=True)
-    new_password = serializers.CharField(label='Password', required=True)
-    confirm_password = serializers.CharField(label='Confirm Password',required=True)
+    email = serializers.CharField(required=False)
+    new_password = serializers.CharField(required=False)
+    confirm_password = serializers.CharField(required=False)
     
     def validate(self, data):
-        email = data.get('email')   
         new_password = data.get('new_password')
         confirm_password = data.get('confirm_password')
         if new_password != confirm_password:

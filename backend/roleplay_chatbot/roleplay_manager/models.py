@@ -78,7 +78,17 @@ class PasswordResetRequest(models.Model):
     def __str__(self):
         return self.user.email
 
-class ChatMessage(BaseModel):
+class TimeStampedModel(models.Model):
+    """TimeStampedModel model for created and modified date."""
+
+    created_date = models.DateTimeField(auto_now_add=True, null=True)
+    modified_date = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        """Meta class."""
+        abstract = True
+
+class ChatMessage(TimeStampedModel):
     """creating chat message table for store chat data"""
 
     sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sender_user', null=True, blank=True)
@@ -86,13 +96,12 @@ class ChatMessage(BaseModel):
     receiver = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='receiver_user', null=True, blank=True)
     room_group_name = models.CharField(max_length=255, null=True, blank=True)
     group_id = models.CharField(max_length=255, null=True, blank=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
     is_edited = models.BooleanField(default=False)
 
     def __str__(self):
         return self.sender.email
 
-class Tag(models.Model):
+class Tag(TimeStampedModel):
     tag_id = models.AutoField(primary_key=True)
     tag_name = models.CharField(max_length=50)
     user_added_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tag')
@@ -114,16 +123,16 @@ class CharacterInfo(models.Model):
     lorebook = models.TextField()
     language = models.CharField(max_length=50, default="ENGLISH", null=True, blank=True)
     user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='character_infos', null=True, blank=True)
-    create_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateTimeField(auto_now_add=True, null=True)
+    modified_date = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.character_name
 
-class ModelInfo(models.Model):
+class ModelInfo(TimeStampedModel):
     user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='model_infos', null=True, blank=True)
     model_name = models.CharField(max_length=255)
     model_location = models.CharField(max_length=255)
-    create_date = models.DateTimeField(auto_now_add=True)
     used_for = models.CharField(max_length=255)
     accessibility = models.CharField(max_length=50)
     prompt_template = models.TextField()
@@ -135,7 +144,7 @@ class ModelInfo(models.Model):
     def __str__(self):
         return self.model_name
 
-class Feedback(models.Model):
+class Feedback(TimeStampedModel):
     user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='feedback', null=True, blank=True)
     rating = models.IntegerField()
     review = models.TextField()

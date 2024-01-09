@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 import os
 import re
+import random
 
 def send_email(title, body_html, to_mails):
     """Function to send email"""
@@ -38,4 +39,6 @@ def is_valid_phone_number(phone_number):
 
     return bool(re.match(pattern, phone_number))
 
-
+def generate_otp():
+    otp = random.randint(100000, 999999)
+    return otp
