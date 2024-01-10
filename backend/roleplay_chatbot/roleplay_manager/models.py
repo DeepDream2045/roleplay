@@ -50,13 +50,14 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     """Using email instead of username."""
 
     id = models.AutoField(primary_key=True)
-    full_name = models.CharField(max_length=60, null=False, blank=False)
-    email = models.EmailField(max_length=255, null=False, blank=False, unique=True)
-    password = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=60, null=True, blank=True)
+    email = models.EmailField(max_length=255, unique=True)
+    password = models.CharField(max_length=100, null=True, blank=True)
     phone = models.CharField(max_length=15, null=True, blank=True)
-    profile_image = models.ImageField(upload_to='',default='', null=True, blank=True)
+    profile_image = models.ImageField(upload_to='', default='', null=True, blank=True)
     email_confirmation = models.BooleanField(default=False)
     stay_sign = models.BooleanField(default=False, null=True, blank=True)
+
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
@@ -69,7 +70,7 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
         """Str method to return User Email name."""
         return '{}'.format(self.email)
 
-class PasswordResetRequest(models.Model):
+class TokenRequest(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     token = models.CharField(max_length=100, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)

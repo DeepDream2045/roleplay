@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
-from .models import CustomUser, PasswordResetRequest, ChatMessage
+from .models import CustomUser, TokenRequest, ChatMessage
 
 class RegisterSerializer(serializers.ModelSerializer):
     """ User registration serializer view"""
@@ -52,7 +52,7 @@ class ForgotPasswordSerializer(serializers.ModelSerializer):
     """Forgot password serializer"""
 
     class Meta:
-        model = PasswordResetRequest
+        model = TokenRequest
         fields = ['user', 'token']
         
     def validate(self, data):
@@ -101,3 +101,9 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         """creating Chat Message object"""
         profile_instance = ChatMessage.objects.create(**validated_data)
         return profile_instance
+
+
+class MagicLoginSerializer(serializers.Serializer):
+    """Magic Login serializer """
+    email = serializers.CharField(label='email', required=True)
+

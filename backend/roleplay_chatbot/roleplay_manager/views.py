@@ -4,12 +4,12 @@ from rest_framework.views import APIView
 from django.contrib import auth
 from rest_framework.response import Response
 from .serializers import (RegisterSerializer, LoginSerializer,
-ForgotPasswordSerializer, ResetPasswordSerializer, ChatMessageSerializer)
+ForgotPasswordSerializer, ResetPasswordSerializer, ChatMessageSerializer, MagicLoginSerializer)
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import CustomUser, PasswordResetRequest, ChatMessage
+from .models import CustomUser, TokenRequest, ChatMessage
 import json
 import uuid
 import logging
@@ -32,6 +32,7 @@ class Registraion(APIView):
         if password != confirm_password:
             return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
         request.data.pop('confirm_password', None)
+
         serializer = RegisterSerializer(data=request.data)
         try:
             if serializer.is_valid():
@@ -59,10 +60,10 @@ class Registraion(APIView):
                 email = user.email
                 token = str(uuid.uuid4())
                 encoded_email = email.encode('utf_16', 'strict').hex() 
-                token_create=PasswordResetRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
+                token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
                 # urls = f"deploymentIP/email_confirmation/{token}/{encoded_email}/"
                 if settings.DEBUG:
-                    urls = f"http://localhost:8000/email_confirmation/{token}/{encoded_email}/"
+                    urls = f"http://localhost:3000/email_confirmation/{token}/{encoded_email}/"
                 if token_create:
                     body_html = render_to_string(
                             'email_confirmation.html',
@@ -136,10 +137,10 @@ class ForgetPassword(APIView):
                 title = 'Forget Password'
                 email = user.email
                 token = str(uuid.uuid4())
-                token_create=PasswordResetRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
+                token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
                 # urls = f"deplomentIP/reset_password/{token}/"
                 if settings.DEBUG:
-                    urls = f"http://localhost:8000/reset_password/{token}/"
+                    urls = f"http://localhost:3000/reset_password/{token}/"
                 if token_create:
                     body_html = render_to_string(
                             'forgot_password.html',
@@ -161,7 +162,7 @@ class ResetPassword(APIView):
 
     def get(self, request, *args, **kwargs):
     
-        password_reset = PasswordResetRequest.objects.get(token=request.GET['token'])
+        password_reset = TokenRequest.objects.get(token=request.GET['token'])
         if password_reset.expiration_time < timezone.now():
                 return Response({'error':'password_reset_expired'})
         else:
@@ -170,7 +171,7 @@ class ResetPassword(APIView):
     def post(self, request, *args, **kwargs):
         """ reset password post view"""
 
-        password_reset = PasswordResetRequest.objects.get(token=request.data['token'])
+        password_reset = TokenRequest.objects.get(token=request.data['token'])
         serializer = ResetPasswordSerializer(data = request.data)
         try:
             if password_reset.expiration_time < timezone.now():
@@ -225,7 +226,7 @@ class EmailConfirmation(APIView):
         """Email verification view"""
         
         try:
-            email_confirm = PasswordResetRequest.objects.get(token=request.data['token'])
+            email_confirm = TokenRequest.objects.get(token=request.data['token'])
             if email_confirm.expiration_time < timezone.now():
                 return Response({'error':'eamil_confirmation_link_expired'})
             email_bytes = bytes.fromhex(request.data['email'])
@@ -237,7 +238,87 @@ class EmailConfirmation(APIView):
                 return Response({'message':'Email is verified'},status=status.HTTP_200_OK)
             return Response({'error': "Email already verified!"},status=status.HTTP_400_BAD_REQUEST)
 
-        except PasswordResetRequest.DoesNotExist:
+        except TokenRequest.DoesNotExist:
             return Response({'error':'token does not exists!'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': "Email does not exists!", 'error_msg': e.__repr__()},status=status.HTTP_400_BAD_REQUEST)
+
+
+class MagicLoginRequestView(APIView):
+    """For Magic login request class view"""
+
+    def post(self, request):
+        """Implement logic to send the magic login link to the user's email
+        This could involve generating a unique token and sending it in an email"""
+
+        expiration_time= timezone.now() + timezone.timedelta(minutes=10)
+        try:
+            user = CustomUser.objects.filter(email=request.data['email']).first()
+            if not user:
+                email= request.data['email'].lower()
+                user = CustomUser.objects.create(email=email)
+
+            if user is not None:
+                title = 'Sign into Roleplay'
+                email = user.email
+                token = str(uuid.uuid4())
+                token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
+                # urls = f"deplomentIP/login_verify/{token}/"
+                if settings.DEBUG:
+                    urls = f"http://localhost:3000/login_verify/{token}/"
+                if token_create:
+                    body_html = render_to_string(
+                            'login_mail.html', {'url':urls}
+                        )
+                    body_html += ''
+                    # result = send_email(title, body_html, [email])
+                    print(token)
+                    return Response({'message':'success'},status=status.HTTP_200_OK,)
+        except Exception as error:
+            print(error)
+            msg = "Error while sending email for Login"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+
+class MagicLoginVerifyView(APIView):
+    """Magic login verification class view"""
+
+    def post(self, request, *args, **kwargs):
+        """ Magic login verification post view"""
+
+        token = TokenRequest.objects.get(token=request.data['token'])
+        serializer = MagicLoginSerializer(data=request.data)
+
+        try:
+            if token.expiration_time < timezone.now():
+                return Response({'error':'token_expired'})
+            if serializer.is_valid():
+            # if serializer.is_valid(raise_exception=True)
+                email = serializer.data.get('email')
+                if email:
+                    user = CustomUser.objects.filter(email=email).first()
+                    if user is None:
+                        return Response({'error':'Email does not exists'})
+                    if not user.email_confirmation:
+                        user.email_confirmation = True
+                        user.is_active = True
+                    user.save()
+                    profile_image = ''
+                    try:
+                        if user.profile_image.url:
+                            profile_image = create_img_url(request, user.profile_image.url)
+                    except ValueError:
+                            profile_image = create_img_url(request, user.profile_image)
+                    refresh = RefreshToken.for_user(user)
+                    response_data = {}
+                    response_data['id'] = user.id
+                    response_data['full_name'] = user.full_name
+                    response_data['email'] = user.email
+                    response_data['profile_image'] = profile_image
+                    response_data['stay_sign'] = user.stay_sign
+                    return Response({'message': 'success', 'data': response_data,
+                            'refresh': str(refresh), 'access': str(refresh.access_token)}
+                            , status=status.HTTP_200_OK, )
+                return Response({'error':'Email does not exists'},status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+                return Response({'error':'something went wrong'},status=status.HTTP_400_BAD_REQUEST)
+

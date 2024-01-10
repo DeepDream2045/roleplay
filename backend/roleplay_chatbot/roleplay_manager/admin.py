@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import (CustomUser, ChatMessage, PasswordResetRequest,
+from .models import (CustomUser, ChatMessage, TokenRequest,
                       Tag, CharacterInfo, ModelInfo, Feedback)
 
 # Register your models here.
@@ -13,8 +13,8 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
     list_display=['id','sender', 'receiver']
 
-class PasswordResetRequestAdmin(admin.ModelAdmin):
-    """Create PasswordResetRequest admin for display on admin panel"""
+class TokenRequestAdmin(admin.ModelAdmin):
+    """Create TokenRequest admin for display on admin panel"""
 
     list_display=['user','token', 'expiration_time']
 
@@ -40,7 +40,7 @@ class FeedbackAdmin(admin.ModelAdmin):
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(ChatMessage, ChatMessageAdmin)
-admin.site.register(PasswordResetRequest, PasswordResetRequestAdmin)
+admin.site.register(TokenRequest, TokenRequestAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(CharacterInfo, CharacterInfoAdmin)
 admin.site.register(ModelInfo, ModelInfoAdmin)
