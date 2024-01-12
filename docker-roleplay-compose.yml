@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=roleplay_DB
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PORT=5432
+    ports:
+      - "7321:5432"
+    volumes:
+      - roleplay_data:/var/lib/postgresql/data
+    restart: always
+
+  app:
+    build:
+      context: .
+      dockerfile: roleplay.Dockerfile
+    ports:
+      - 8000:8000
+    env_file:
+      - ./backend/roleplay_chatbot/.env
+    depends_on:
+      - postgres
+    restart: always
+
+volumes:
+  roleplay_data:
