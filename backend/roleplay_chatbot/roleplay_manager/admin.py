@@ -6,7 +6,7 @@ from .models import (CustomUser, ChatMessage, TokenRequest,
 class CustomUserAdmin(admin.ModelAdmin):
     """Create CustomUser admin for display on admin panel"""
 
-    list_display = ('full_name', 'email')
+    list_display = ('id','full_name', 'email')
 
 class ChatMessageAdmin(admin.ModelAdmin):
     """Create ChatMessage admin for display on admin panel"""
@@ -26,7 +26,7 @@ class TagAdmin(admin.ModelAdmin):
 class CharacterInfoAdmin(admin.ModelAdmin):
     """Create CharacterInfo admin for display on admin panel"""
 
-    list_display=['id','character_name', 'character_gender', 'tag_id']
+    list_display=['id','character_name', 'character_gender', 'tags']
 
 class ModelInfoAdmin(admin.ModelAdmin):
     """Create ModelInfo admin for display on admin panel"""

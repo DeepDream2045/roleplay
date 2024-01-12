@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
-from .models import CustomUser, TokenRequest, ChatMessage
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from .models import (CustomUser, TokenRequest, ChatMessage, 
+                    CharacterInfo, ModelInfo)
 
 class RegisterSerializer(serializers.ModelSerializer):
     """ User registration serializer view"""
@@ -16,10 +18,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(label='Name', required=True)
     email = serializers.CharField(label='Email', required=True)
     password = serializers.CharField(label='Password', required=True)
-    # confirm_password = serializers.CharField(label='Confirm Password',
-    #                                          required=True)
-    stay_sign = serializers.BooleanField(label='Stay signed in for a week ',
-                                             required=True)
+    stay_sign = serializers.BooleanField(label='Stay signed in for a week',required=True)
 
     def validate(self, data):
         """validating request data"""
@@ -48,6 +47,30 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(label='Password', required=True)
 
 
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(required=False)
+
+    default_error_message = {
+        'bad_token': ('Token is expired or invalid')
+    }
+
+    def validate(self, attrs):
+        if not attrs.get('refresh'):
+            raise serializers.ValidationError(detail='Refresh token is required.', field='detail', status_code=400)
+        self.token = attrs['refresh']
+        return attrs
+
+    def save(self, **kwargs):
+        try:
+            RefreshToken(self.token).blacklist()
+        except TokenError:
+            raise serializers.ValidationError(detail='Token is expired or invalid.', field='detail', status_code=400)
+
+class MagicLoginSerializer(serializers.Serializer):
+    """Magic Login serializer """
+    email = serializers.CharField(label='email', required=True)
+
+
 class ForgotPasswordSerializer(serializers.ModelSerializer):
     """Forgot password serializer"""
 
@@ -65,6 +88,7 @@ class ForgotPasswordSerializer(serializers.ModelSerializer):
                         Please try again or Sign Up.""")
         return data
 
+
 class ResetPasswordSerializer(serializers.Serializer):
 
     email = serializers.CharField(required=False)
@@ -78,7 +102,6 @@ class ResetPasswordSerializer(serializers.Serializer):
             return serializers.ValidationError("Passwords do not match")
         data.pop('confirm_password', None)
         return data
-
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -103,7 +126,36 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         return profile_instance
 
 
-class MagicLoginSerializer(serializers.Serializer):
-    """Magic Login serializer """
-    email = serializers.CharField(label='email', required=True)
+class ModelInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ModelInfo
+        fields = '__all__'
+        # extra_kwargs = {'user': {'required': False}} 
+
+    def validate(self, attrs):
+        attrs['user'] = self.context["user"]
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        """creating model info object"""
+        
+        model_info_instance = ModelInfo.objects.create(**validated_data)
+        return model_info_instance
+
+
+class CharacterInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CharacterInfo
+        fields = '__all__'
+
+    def validate(self, attrs):
+        attrs['user'] = self.context["user"]
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        """creating character info object"""
+        
+        model_info_instance = CharacterInfo.objects.create(**validated_data)
+        return model_info_instance
+
 

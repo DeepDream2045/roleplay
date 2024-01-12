@@ -1,23 +1,22 @@
-from django.db.models import Q
 from django.template.loader import render_to_string
+from rest_framework import generics
 from rest_framework.views import APIView
 from django.contrib import auth
 from rest_framework.response import Response
-from .serializers import (RegisterSerializer, LoginSerializer,
-ForgotPasswordSerializer, ResetPasswordSerializer, ChatMessageSerializer, MagicLoginSerializer)
+from .serializers import (RegisterSerializer, LoginSerializer, LogoutSerializer,
+ForgotPasswordSerializer, ResetPasswordSerializer,MagicLoginSerializer,
+CharacterInfoSerializer, ModelInfoSerializer)
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from roleplay_manager.permission import IsValidUser
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import CustomUser, TokenRequest, ChatMessage
-import json
+from .models import CustomUser, TokenRequest, CharacterInfo, ModelInfo
 import uuid
 import logging
-from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from .utility import send_email, create_img_url, is_valid_phone_number
 from django.utils import timezone
+from .utility import send_email, create_img_url
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +60,7 @@ class Registraion(APIView):
                 token = str(uuid.uuid4())
                 encoded_email = email.encode('utf_16', 'strict').hex() 
                 token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
-                # urls = f"deploymentIP/email_confirmation/{token}/{encoded_email}/"
-                if settings.DEBUG:
-                    urls = f"http://localhost:3000/email_confirmation/{token}/{encoded_email}/"
+                urls = f"{settings.DASHBOARD_BASE_ROUTE}/email_confirmation/{token}/{encoded_email}/"
                 if token_create:
                     body_html = render_to_string(
                             'email_confirmation.html',
@@ -119,6 +116,18 @@ class LoginView(APIView):
             return Response({"error": "Invalid Email or password"},status=status.HTTP_400_BAD_REQUEST)
 
 
+class LogoutView(generics.GenericAPIView):
+    serializer_class = LogoutSerializer
+    permission_classes = (IsAuthenticated, IsValidUser)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'errors': serializer.errors},status=status.HTTP_204_NO_CONTENT)
+
+
 class ForgetPassword(APIView):
     """Forgot password class view"""
 
@@ -138,9 +147,7 @@ class ForgetPassword(APIView):
                 email = user.email
                 token = str(uuid.uuid4())
                 token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
-                # urls = f"deplomentIP/reset_password/{token}/"
-                if settings.DEBUG:
-                    urls = f"http://localhost:3000/reset_password/{token}/"
+                urls = f"{settings.DASHBOARD_BASE_ROUTE}/reset_password/{token}/"
                 if token_create:
                     body_html = render_to_string(
                             'forgot_password.html',
@@ -194,7 +201,6 @@ class ResetPassword(APIView):
 class ChangeProfilePictureView(APIView):
     """Change profile image view"""
 
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -263,9 +269,7 @@ class MagicLoginRequestView(APIView):
                 email = user.email
                 token = str(uuid.uuid4())
                 token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
-                # urls = f"deplomentIP/login_verify/{token}/"
-                if settings.DEBUG:
-                    urls = f"http://localhost:3000/login_verify/{token}/"
+                urls = f"{settings.DASHBOARD_BASE_ROUTE}/login_verify/{token}/"
                 if token_create:
                     body_html = render_to_string(
                             'login_mail.html', {'url':urls}
@@ -278,6 +282,7 @@ class MagicLoginRequestView(APIView):
             print(error)
             msg = "Error while sending email for Login"
             return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+
 
 class MagicLoginVerifyView(APIView):
     """Magic login verification class view"""
@@ -322,3 +327,98 @@ class MagicLoginVerifyView(APIView):
         except Exception:
                 return Response({'error':'something went wrong'},status=status.HTTP_400_BAD_REQUEST)
 
+
+class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = ModelInfoSerializer
+    queryset = ModelInfo.objects.all()
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        context = super().get_serializer_context()
+        context.update({
+            "user": self.request.user
+        })
+        return context
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            id = request.data.get('id', None)
+            model_info = ModelInfo.objects.get(id=id)
+            serializer = self.get_serializer(model_info, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'LLM Model info update successfully'})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ModelInfo.DoesNotExist:
+            return Response({'error': 'LLM Model info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self, request, *args, **kwargs):
+        try:
+            id = request.data.get('id', None)
+            model_info = ModelInfo.objects.get(id=id)
+            model_info.delete()
+            return Response({'message': 'LLM Model info deleted successfully'})
+        except ModelInfo.DoesNotExist:
+            return Response({'error': 'LLM Model info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+    """Create Character Info View"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = CharacterInfoSerializer
+    queryset = CharacterInfo.objects.all()
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        context = super().get_serializer_context()
+        context.update({
+            "user": self.request.user
+        })
+        return context
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            id = request.data.get('id', None)
+            character_info = CharacterInfo.objects.get(id=id)
+            serializer = self.get_serializer(character_info, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'character info update successfully'})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except CharacterInfo.DoesNotExist:
+            return Response({'error': 'character info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            id = request.data.get('id', None)
+            character_info = CharacterInfo.objects.get(id=id)
+            character_info.delete()
+            return Response({'message': 'character info deleted successfully'})
+        except CharacterInfo.DoesNotExist:
+            return Response({'error': 'character info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
