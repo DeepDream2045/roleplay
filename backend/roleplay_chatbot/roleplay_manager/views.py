@@ -295,14 +295,14 @@ class MagicLoginVerifyView(APIView):
 
         try:
             if token.expiration_time < timezone.now():
-                return Response({'error':'token_expired'})
+                return Response({'error':'token_expired'},status=status.HTTP_400_BAD_REQUEST)
             if serializer.is_valid():
             # if serializer.is_valid(raise_exception=True)
-                email = serializer.data.get('email')
-                if email:
-                    user = CustomUser.objects.filter(email=email).first()
+                # token = serializer.data.get('token')
+                if token:
+                    user = CustomUser.objects.filter(id=token.user.id).first()
                     if user is None:
-                        return Response({'error':'Email does not exists'})
+                        return Response({'error':'token expired'},status=status.HTTP_400_BAD_REQUEST)
                     if not user.email_confirmation:
                         user.email_confirmation = True
                         user.is_active = True
@@ -323,8 +323,9 @@ class MagicLoginVerifyView(APIView):
                     return Response({'message': 'success', 'data': response_data,
                             'refresh': str(refresh), 'access': str(refresh.access_token)}
                             , status=status.HTTP_200_OK, )
-                return Response({'error':'Email does not exists'},status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
+                return Response({'error':'token expired'},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+                logger.error(str(e))
                 return Response({'error':'something went wrong'},status=status.HTTP_400_BAD_REQUEST)
 
 

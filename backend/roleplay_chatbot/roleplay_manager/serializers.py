@@ -68,7 +68,7 @@ class LogoutSerializer(serializers.Serializer):
 
 class MagicLoginSerializer(serializers.Serializer):
     """Magic Login serializer """
-    email = serializers.CharField(label='email', required=True)
+    token = serializers.CharField(label='token', required=True)
 
 
 class ForgotPasswordSerializer(serializers.ModelSerializer):
