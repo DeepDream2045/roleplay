@@ -295,7 +295,7 @@ class MagicLoginVerifyView(APIView):
 
         try:
             if token.expiration_time < timezone.now():
-                return Response({'error':'token_expired'},status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error':'token expired'},status=status.HTTP_400_BAD_REQUEST)
             if serializer.is_valid():
             # if serializer.is_valid(raise_exception=True)
                 # token = serializer.data.get('token')
