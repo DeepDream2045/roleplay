@@ -275,7 +275,7 @@ class MagicLoginRequestView(APIView):
                             'login_mail.html', {'url':urls}
                         )
                     body_html += ''
-                    # result = send_email(title, body_html, [email])
+                    result = send_email(title, body_html, [email])
                     print(token)
                     return Response({'message':'success'},status=status.HTTP_200_OK,)
         except Exception as error:
