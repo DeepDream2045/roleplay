@@ -275,8 +275,7 @@ class MagicLoginRequestView(APIView):
                             'login_mail.html', {'url':urls}
                         )
                     body_html += ''
-                    # result = send_email(title, body_html, [email])
-                    print(token)
+                    result = send_email(title, body_html, [email])
                     return Response({'message':'success'},status=status.HTTP_200_OK,)
         except Exception as error:
             print(error)
@@ -295,35 +294,32 @@ class MagicLoginVerifyView(APIView):
 
         try:
             if token.expiration_time < timezone.now():
-                return Response({'error':'token_expired'})
+                return Response({'error':'token expired'}, status=status.HTTP_400_BAD_REQUEST)
             if serializer.is_valid():
-            # if serializer.is_valid(raise_exception=True)
-                email = serializer.data.get('email')
-                if email:
-                    user = CustomUser.objects.filter(email=email).first()
-                    if user is None:
-                        return Response({'error':'Email does not exists'})
-                    if not user.email_confirmation:
-                        user.email_confirmation = True
-                        user.is_active = True
-                    user.save()
-                    profile_image = ''
-                    try:
-                        if user.profile_image.url:
-                            profile_image = create_img_url(request, user.profile_image.url)
-                    except ValueError:
-                            profile_image = create_img_url(request, user.profile_image)
-                    refresh = RefreshToken.for_user(user)
-                    response_data = {}
-                    response_data['id'] = user.id
-                    response_data['full_name'] = user.full_name
-                    response_data['email'] = user.email
-                    response_data['profile_image'] = profile_image
-                    response_data['stay_sign'] = user.stay_sign
-                    return Response({'message': 'success', 'data': response_data,
-                            'refresh': str(refresh), 'access': str(refresh.access_token)}
-                            , status=status.HTTP_200_OK, )
-                return Response({'error':'Email does not exists'},status=status.HTTP_400_BAD_REQUEST)
+                user = CustomUser.objects.filter(id=token.user.id).first()
+                if user is None:
+                    return Response({'error':'token expired'},status=status.HTTP_400_BAD_REQUEST)
+                if not user.email_confirmation:
+                    user.email_confirmation = True
+                    user.is_active = True
+                user.save()
+                profile_image = ''
+                try:
+                    if user.profile_image.url:
+                        profile_image = create_img_url(request, user.profile_image.url)
+                except ValueError:
+                        profile_image = create_img_url(request, user.profile_image)
+                refresh = RefreshToken.for_user(user)
+                response_data = {}
+                response_data['id'] = user.id
+                response_data['full_name'] = user.full_name
+                response_data['email'] = user.email
+                response_data['profile_image'] = profile_image
+                response_data['stay_sign'] = user.stay_sign
+                return Response({'message': 'success', 'data': response_data,
+                        'refresh': str(refresh), 'access': str(refresh.access_token)}
+                        , status=status.HTTP_200_OK, )
+            return Response({'error':'Email required'},status=status.HTTP_400_BAD_REQUEST)
         except Exception:
                 return Response({'error':'something went wrong'},status=status.HTTP_400_BAD_REQUEST)
 
@@ -373,7 +369,6 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
             return Response({'error': 'LLM Model info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):

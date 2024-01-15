@@ -56,7 +56,7 @@ class LogoutSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs.get('refresh'):
-            raise serializers.ValidationError(detail='Refresh token is required.', field='detail', status_code=400)
+            raise serializers.ValidationError(detail='Refresh token is required.')
         self.token = attrs['refresh']
         return attrs
 
@@ -64,11 +64,12 @@ class LogoutSerializer(serializers.Serializer):
         try:
             RefreshToken(self.token).blacklist()
         except TokenError:
-            raise serializers.ValidationError(detail='Token is expired or invalid.', field='detail', status_code=400)
+            raise serializers.ValidationError(detail='Token is expired or invalid.')
+
 
 class MagicLoginSerializer(serializers.Serializer):
     """Magic Login serializer """
-    email = serializers.CharField(label='email', required=True)
+    token = serializers.CharField(label='token', required=True)
 
 
 class ForgotPasswordSerializer(serializers.ModelSerializer):

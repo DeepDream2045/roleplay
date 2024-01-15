@@ -92,7 +92,7 @@ class TimeStampedModel(models.Model):
 class Tag(TimeStampedModel):
     tag_id = models.AutoField(primary_key=True)
     tag_name = models.CharField(max_length=50)
-    user_added_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tag')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tag')
 
     def __str__(self):
         return self.tag_name
@@ -128,7 +128,7 @@ class CharacterInfo(models.Model):
     prompt = models.TextField(null=False, blank=False)
     prompt_visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)
     initial_message = models.TextField(null=True, blank=True)
-    image = models.ImageField(upload_to='')
+    image = models.ImageField(upload_to='',null=True, blank=True)
     NSFW = models.BooleanField(default=False)
     lorebook = models.TextField(null=True, blank=True)
     language = models.CharField(max_length=50, default="ENGLISH", null=True, blank=True)

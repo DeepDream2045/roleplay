@@ -1,0 +1,241 @@
+To log in using the magic link, you need to follow these steps:
+(Note: please add the email creds in the .env file)
+
+Send an email to the provided email address. Include the email address in the body of the request, like this:
+
+Request URL: http://127.0.0.1:8000/login_request/
+Request Body:
+{
+    "email": "test@gmail.com"
+}
+Response: http://localhost:3000/login_verify/{token}
+For example: http://localhost:3000/login_verify/3a650ab0-5b1e-4ca0-966a-8fca6695c88c
+
+
+To verify the magic link, make another request with the following details:
+Request URL: http://localhost:8000/login_verify/
+Request Body:
+{
+    "token":"3a650ab0-5b1e-4ca0-966a-8fca6695c88c"
+}
+
+Response:
+{
+    "message": "success",
+    "data": {
+        "id": 2,
+        "full_name": "test",
+        "email": "test@test.com",
+        "phone": "123456789",
+        "stay_sign": false,
+        "profile_image": null
+    },
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+##############################################################################
+For Logout API
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+Request Method: Post
+Response:
+{
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...."
+}
+
+##############################################################################
+For Model Info APIs
+Request URL: http://localhost:8000/model_info/
+
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: GET
+Response:
+[
+    {
+        "id": 1,
+        "created_date": "2024-01-15T07:49:32.874281Z",
+        "modified_date": "2024-01-15T07:49:32.874304Z",
+        "model_name": "test",
+        "short_bio": "test",
+        "model_location": "test",
+        "prompt_template": "test",
+        "temperature": 0.1,
+        "repetition_penalty": 0.1,
+        "top_p": 0.1,
+        "top_k": 1,
+        "user": 2
+    },
+]
+
+----------------------------------------------------------
+Request Method: Post
+Request Body:
+{
+    "model_name": "test",
+    "short_bio": "test",
+    "model_location": "test",
+    "prompt_template": "test",
+    "temperature": 0.1,
+    "repetition_penalty": 0.1,
+    "top_p": 0.1,
+    "top_k": 1
+}
+
+Response:
+{
+    "id": 1,
+    "created_date": "2024-01-15T07:49:32.874281Z",
+    "modified_date": "2024-01-15T07:49:32.874304Z",
+    "model_name": "test",
+    "short_bio": "test",
+    "model_location": "test",
+    "prompt_template": "test",
+    "temperature": 0.1,
+    "repetition_penalty": 0.1,
+    "top_p": 0.1,
+    "top_k": 1,
+    "user": 2
+}
+
+----------------------------------------------------------
+Request Method: PUT
+Request Body:
+{
+    "id":1,
+    "model_name": "update test",
+    "short_bio": "update test",
+    "model_location": "test",
+    "prompt_template": "test",
+    "temperature": 0.1,
+    "repetition_penalty": 0.1,
+    "top_p": 0.1,
+    "top_k": 1
+}
+
+Response:
+{
+    "message": "LLM Model info updated successfully"
+}
+
+----------------------------------------------------------
+Request Method: DELETE
+Request Body:
+{
+    "id":2
+}
+
+Response:
+{
+    "message": "LLM Model info deleted successfully"
+}
+
+##############################################################################
+For Character Info APIs
+Request URL: http://localhost:8000/character_info/
+
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: GET
+Response:
+[
+    {
+        "id": 1,
+        "character_name": "Test Role",
+        "short_bio": "Test Role",
+        "character_gender": "male",
+        "tags": "Anime",
+        "prompt": "test prompt",
+        "prompt_visibility": "private",
+        "initial_message": "",
+        "image": null,
+        "NSFW": false,
+        "lorebook": "",
+        "language": "",
+        "created_date": "2024-01-15T08:27:55.498415Z",
+        "modified_date": "2024-01-15T08:27:55.498436Z",
+        "model_id": 1,
+        "user": 2
+    }
+]
+
+----------------------------------------------------------
+Request Method: Post
+Request Body:
+{
+    "character_name":"Test Role",
+    "short_bio":"Test Role",
+    "character_gender":"male",
+    "tags":"Anime",
+    "model_id":"1",
+    "prompt":"test prompt",
+    "prompt_visibility":"private",
+    "initial_message":"",
+    "NSFW":false,
+    "lorebook":"",
+    "language":""
+}
+
+Response:
+{
+    "id": 1,
+    "character_name": "Test Role",
+    "short_bio": "Test Role",
+    "character_gender": "male",
+    "tags": "Anime",
+    "prompt": "test prompt",
+    "prompt_visibility": "private",
+    "initial_message": "",
+    "image": null,
+    "NSFW": false,
+    "lorebook": "",
+    "language": "",
+    "created_date": "2024-01-15T08:27:55.498415Z",
+    "modified_date": "2024-01-15T08:27:55.498436Z",
+    "model_id": 1,
+    "user": 2
+}
+
+----------------------------------------------------------
+Request Method: PUT
+Request Body:
+{
+    "id": 2,
+    "character_name":"Test 3",
+    "short_bio":"Test Role",
+    "character_gender":"male",
+    "tags":"Anime",
+    "model_id":"1",
+    "prompt":"test prompt",
+    "prompt_visibility":"public",
+    "initial_message":"",
+    "NSFW":false,
+    "lorebook":"",
+    "language":""
+}
+
+Response:
+{
+    "message": "character info update successfully"
+}
+
+----------------------------------------------------------
+Request Method: DELETE
+Request Body:
+{
+    "id":2
+}
+
+Response:
+{
+    "message": "character info deleted successfully"
+}

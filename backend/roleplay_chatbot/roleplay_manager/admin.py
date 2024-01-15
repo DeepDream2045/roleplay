@@ -21,7 +21,7 @@ class TokenRequestAdmin(admin.ModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     """Create Tag admin for display on admin panel"""
 
-    list_display=['tag_id','tag_name', 'user_added_by']
+    list_display=['tag_id','tag_name', 'user']
 
 class CharacterInfoAdmin(admin.ModelAdmin):
     """Create CharacterInfo admin for display on admin panel"""
