@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from shortuuidfield import ShortUUIDField
 
 class BaseModel(models.Model):
     """Base model for created and modified date."""
@@ -124,9 +125,10 @@ class CharacterInfo(models.Model):
     short_bio = models.TextField(null=False, blank=False)
     character_gender = models.CharField(max_length=10, null=False, blank=False)
     tags = models.CharField(null=False, blank=False)
+    # tags = models.ManyToManyField("roleplay_manager.Tag", related_name='character_tag', null=True, blank=True)
     model_id = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='character_model',)
     prompt = models.TextField(null=False, blank=False)
-    prompt_visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)
+    character_visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)
     initial_message = models.TextField(null=True, blank=True)
     image = models.ImageField(upload_to='',null=True, blank=True)
     NSFW = models.BooleanField(default=False)
@@ -139,19 +141,41 @@ class CharacterInfo(models.Model):
     def __str__(self):
         return self.character_name
 
+class ChatRoom(TimeStampedModel):
+    DM_ROOM = 1
+    GROUP_ROOM = 2
+
+    ROOM_TYPE = (
+        (DM_ROOM, 'DM'),
+        (GROUP_ROOM, 'Group')
+    )
+    room_id = ShortUUIDField()
+    type = models.PositiveIntegerField(choices=ROOM_TYPE, default=DM_ROOM)
+    group_name = models.CharField(max_length=30, null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sender', null=True, blank=True)
+    character = models.ForeignKey(CharacterInfo, on_delete=models.CASCADE, related_name='character', null=True, blank=True)
+    # member = models.ManyToManyField('users.CustomUser', related_name='room_members')
+    # is_active = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.room_id + ' - ' + str(self.group_name)
+
+    @property
+    def get_group_name(self):
+        if self.group_name is None:
+            return self.user.full_name + ' - ' + self.character.character_name
+        return self.group_name
 
 class ChatMessage(TimeStampedModel):
     """creating chat message table for store chat data"""
 
-    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sender_user', null=True, blank=True)
-    message = models.TextField(null=True, blank=True)
-    receiver = models.ForeignKey(CharacterInfo, on_delete=models.CASCADE, related_name='receiver_user', null=True, blank=True)
-    room_group_name = models.CharField(max_length=255, null=True, blank=True)
-    group_id = models.CharField(max_length=255, null=True, blank=True)
+    chat = models.ForeignKey(ChatRoom, on_delete=models.SET_NULL, related_name='chatroom', null=True)
+    user_message = models.TextField(null=True, blank=True)
+    character_message = models.TextField(null=True, blank=True)
     is_edited = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.sender.email
+        return self.chat.user.email
 
 class Feedback(TimeStampedModel):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='feedback', null=True, blank=True)

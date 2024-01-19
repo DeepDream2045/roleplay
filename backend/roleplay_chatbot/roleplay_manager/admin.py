@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import (CustomUser, ChatMessage, TokenRequest,
+from .models import (CustomUser, ChatRoom, ChatMessage, TokenRequest,
                       Tag, CharacterInfo, ModelInfo, Feedback)
 
 # Register your models here.
@@ -11,7 +11,12 @@ class CustomUserAdmin(admin.ModelAdmin):
 class ChatMessageAdmin(admin.ModelAdmin):
     """Create ChatMessage admin for display on admin panel"""
 
-    list_display=['id','sender', 'receiver']
+    list_display=['id', 'chat', 'user_message', 'character_message']
+
+class ChatRoomAdmin(admin.ModelAdmin):
+    """Create ChatMessage admin for display on admin panel"""
+
+    list_display=['id', 'room_id', 'type', 'group_name', 'user', 'character']
 
 class TokenRequestAdmin(admin.ModelAdmin):
     """Create TokenRequest admin for display on admin panel"""
@@ -39,6 +44,7 @@ class FeedbackAdmin(admin.ModelAdmin):
     list_display=['user_id','rating', 'review']
 
 admin.site.register(CustomUser, CustomUserAdmin)
+admin.site.register(ChatRoom, ChatRoomAdmin)
 admin.site.register(ChatMessage, ChatMessageAdmin)
 admin.site.register(TokenRequest, TokenRequestAdmin)
 admin.site.register(Tag, TagAdmin)
