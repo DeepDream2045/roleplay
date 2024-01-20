@@ -124,7 +124,7 @@ class CharacterInfo(models.Model):
     character_name = models.CharField(max_length=100)
     short_bio = models.TextField(null=False, blank=False)
     character_gender = models.CharField(max_length=10, null=False, blank=False)
-    tags = models.CharField(null=False, blank=False)
+    tags = models.CharField(max_length=100, null=False, blank=False)
     # tags = models.ManyToManyField("roleplay_manager.Tag", related_name='character_tag', null=True, blank=True)
     model_id = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='character_model',)
     prompt = models.TextField(null=False, blank=False)
