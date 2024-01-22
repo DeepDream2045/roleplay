@@ -1,15 +1,20 @@
 import torch
-from langchain_community.llms import HuggingFacePipeline
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 # from langchain.llms import HuggingFacePipeline
 # from huggingface_hub import hf_hub_download
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer
-from bot.constants import  MAX_NEW_TOKENS, HF_TOKEN
 from transformers import (
     GenerationConfig,
     pipeline,
 )
 from dotenv import load_dotenv
 load_dotenv(".env")
+try:
+    from bot.constants import  MAX_NEW_TOKENS, HF_TOKEN
+except Exception as error:
+    print("Load_ model :", error)
+    from constants import  MAX_NEW_TOKENS, HF_TOKEN
+
 
 def load_full_model(model_id, device_type, cache_dir) :
     """

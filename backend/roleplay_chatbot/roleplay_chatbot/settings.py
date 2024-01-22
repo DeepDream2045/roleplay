@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-from datetime import timedelta
+from datetime import timedelta, datetime
 from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,13 +26,12 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 
-SECRET_KEY = os.environ['SECRET_KEY']
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ['DEBUG']
+DEBUG = os.environ.get('DEBUG') in ["True", "true"]
 
-ALLOWED_HOSTS = [os.environ['ALLOWED_HOSTS']]
-
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(",")
 
 # Application definition
 
@@ -191,8 +190,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'roleplay_chatbot/static/')
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
+
 MEDIA_ROOT = os.path.join(BASE_DIR,'media','image')
 # MEDIA_URL = '/media/image/'
 
@@ -212,3 +215,28 @@ EMAIL_USE_SSL = False
 
 # Frontend base route
 DASHBOARD_BASE_ROUTE=os.environ.get('DASHBOARD_BASE_ROUTE')
+
+LOGGING_DIR = os.path.join(BASE_DIR, 'log_files')  # Change this to your desired logs directory
+
+if not os.path.exists(LOGGING_DIR):
+    os.makedirs(LOGGING_DIR)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            # 'filename': os.path.join(LOGGING_DIR, 'django.log'),
+            'filename': f"{os.path.join(BASE_DIR, 'log_files')}/error_{datetime.now().date()}.log",
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}

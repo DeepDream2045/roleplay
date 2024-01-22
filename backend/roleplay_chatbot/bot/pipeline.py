@@ -1,10 +1,17 @@
-from bot.persona_character_attributes import *
-from bot.prompt_template_utils import *
 import torch
 import subprocess
-from bot.load_models import load_llm_model_langchain
-from bot.constants import MODEL_ID, MODELS_PATH
 from langchain.chains import ConversationChain
+try:
+    from bot.persona_character_attributes import *
+    from bot.prompt_template_utils import *
+    from bot.load_models import load_llm_model_langchain
+    from bot.constants import MODEL_ID, MODELS_PATH
+except Exception as error:
+    from persona_character_attributes import *
+    from prompt_template_utils import *
+    from load_models import load_llm_model_langchain
+    from constants import MODEL_ID, MODELS_PATH
+    print("pipeline error: ", error)
 import gc
 gc.collect()
 
