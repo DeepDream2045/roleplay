@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
-from .models import (CustomUser, TokenRequest, ChatMessage, 
-                    CharacterInfo, ModelInfo)
+from .models import *
 
 class RegisterSerializer(serializers.ModelSerializer):
     """ User registration serializer view"""
@@ -112,21 +111,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'full_name', 'email','profile_image')
 
 
-class ChatMessageSerializer(serializers.ModelSerializer):
-    """Serializer for Chat Message """
-
-    sender = CustomUserSerializer()
-    receiver = CustomUserSerializer()
-    class Meta:
-        model = ChatMessage
-        fields = ('id', 'sender', 'message', 'receiver', 'timestamp', 'is_edited')
-
-    def create(self, validated_data):
-        """creating Chat Message object"""
-        profile_instance = ChatMessage.objects.create(**validated_data)
-        return profile_instance
-
-
 class ModelInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ModelInfo
@@ -158,5 +142,52 @@ class CharacterInfoSerializer(serializers.ModelSerializer):
         
         model_info_instance = CharacterInfo.objects.create(**validated_data)
         return model_info_instance
+
+
+class CallLLMSerializer(serializers.Serializer):
+    """Magic Login serializer """
+    token = serializers.CharField(label='token', required=True)
+    user = serializers.CharField(label='user', required=True)
+    character_id = serializers.CharField(label='character_id', required=True)
+    message = serializers.CharField(label='message', required=True)
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    """Serializer for Chat Message """
+    
+    class Meta:
+        model = ChatMessage
+        fields = '__all__'
+
+
+class RoomInfoChatSerializer(serializers.ModelSerializer):
+    """Serializer for Room Info Chat Message """
+    chatroom = ChatMessageSerializer(many=True, read_only=True)
+    user_name = serializers.CharField(required=False)
+    profile_image = serializers.ImageField(required=False)
+    character_name = serializers.CharField(required=False)
+    character_image = serializers.ImageField(required=False)
+
+
+    class Meta:
+        model = ChatRoom
+        fields = ('room_id', 'type', 'group_name', 'user', 'character','chatroom', 'user_name', 'profile_image', 'character_name', 'character_image')
+
+    def create(self, validated_data):
+        breakpoint()
+        chat, created = ChatRoom.objects.get_or_create(user = validated_data['user'], character = validated_data['character'])
+        if chat.group_name is None:
+            chat.group_name = chat.get_group_name
+            chat.save()
+        response_data = {}
+        response_data['room_id'] = chat.room_id
+        response_data['group_name'] = chat.group_name
+        response_data['user_name'] = chat.user.full_name
+        response_data['profile_image'] = chat.user.profile_image
+        response_data['character_name'] = chat.character.character_name
+        response_data['character_image'] = chat.character.image
+        validated_data.update(response_data)
+        return validated_data
+
 
 

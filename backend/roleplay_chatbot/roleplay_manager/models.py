@@ -163,7 +163,9 @@ class ChatRoom(TimeStampedModel):
     @property
     def get_group_name(self):
         if self.group_name is None:
-            return self.user.full_name + ' - ' + self.character.character_name
+            if self.type == 'Group':
+                return self.user.full_name + ' - ' + self.character.character_name
+            return self.character.character_name
         return self.group_name
 
 class ChatMessage(TimeStampedModel):

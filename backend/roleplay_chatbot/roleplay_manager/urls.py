@@ -25,4 +25,7 @@ urlpatterns = [
 
     path('character_info/', views.CharacterInfoView.as_view(), name='character_info'),
     path('model_info/', views.ModelInfoAPIView.as_view(), name='model_info'),
+
+    path('room_info/', views.RoomInfoChatView.as_view(), name='room_info'),
+    path('chat_message/', views.ChatMessageView.as_view(), name='chat_message'),
 ]

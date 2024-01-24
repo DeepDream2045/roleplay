@@ -155,7 +155,7 @@ Response:
         "character_gender": "male",
         "tags": "Anime",
         "prompt": "test prompt",
-        "prompt_visibility": "private",
+        "character_visibility": "private",
         "initial_message": "",
         "image": null,
         "NSFW": false,
@@ -178,7 +178,7 @@ Request Body:
     "tags":"Anime",
     "model_id":"1",
     "prompt":"test prompt",
-    "prompt_visibility":"private",
+    "character_visibility":"private",
     "initial_message":"",
     "NSFW":false,
     "lorebook":"",
@@ -193,7 +193,7 @@ Response:
     "character_gender": "male",
     "tags": "Anime",
     "prompt": "test prompt",
-    "prompt_visibility": "private",
+    "character_visibility": "private",
     "initial_message": "",
     "image": null,
     "NSFW": false,
@@ -216,7 +216,7 @@ Request Body:
     "tags":"Anime",
     "model_id":"1",
     "prompt":"test prompt",
-    "prompt_visibility":"public",
+    "character_visibility":"public",
     "initial_message":"",
     "NSFW":false,
     "lorebook":"",
@@ -238,4 +238,29 @@ Request Body:
 Response:
 {
     "message": "character info deleted successfully"
+}
+
+
+##############################################################################
+For WebSocket APIs
+Request URL: ws://localhost:8000/asw/user_id/character_id/
+
+Request Body:
+{
+    "text": "user message"
+}
+
+Response:
+{
+    "message_id": 4,
+    "sender_user_message": "who is modi?",
+    "character_message": " Well, my friend, He's the Prime Minister of India",
+
+    "sender_user_id": 2,
+    "sender_email": "test@test.com",
+    "sender_profile_pic": null,
+
+    "character_id": 1,
+    "character_name": "Elon Musk",
+    "character_profile_pic": null
 }

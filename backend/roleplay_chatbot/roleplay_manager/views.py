@@ -3,16 +3,16 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from django.contrib import auth
 from rest_framework.response import Response
-from .serializers import (RegisterSerializer, LoginSerializer, LogoutSerializer,
-ForgotPasswordSerializer, ResetPasswordSerializer,MagicLoginSerializer,
-CharacterInfoSerializer, ModelInfoSerializer)
+from .serializers import *
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from roleplay_manager.permission import IsValidUser
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import CustomUser, TokenRequest, CharacterInfo, ModelInfo
+from .models import *
+from bot.pipeline import *
 import uuid
 import logging
+from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
@@ -417,3 +417,190 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             return Response({'error': 'character info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+    """For Chat Message class view"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = RoomInfoChatSerializer
+    queryset = ChatRoom.objects.all()
+
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = CustomUser.objects.filter(id=request.data['user_id'])
+            if user.exists():
+                user = user.first()
+                queryset = ChatRoom.objects.filter(user = user)
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+
+            msg = "User information not found"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            print(error)
+            msg = "Please provide valid user information"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            room_id = request.data.get('room_id', None)
+            queryset = ChatRoom.objects.get(room_id = room_id)
+            serializer = self.get_serializer(queryset, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Room info update successfully'})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except ChatRoom.DoesNotExist:
+            return Response({'error': 'Room info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            room_id = request.data.get('room_id', None)
+            queryset = ChatRoom.objects.get(room_id = room_id)
+            queryset.delete()
+            return Response({'message': 'Room info deleted successfully'})
+
+        except ChatRoom.DoesNotExist:
+            return Response({'error': 'Room info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ChatMessageView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIView):
+    """For Chat Message class view"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = ChatMessageSerializer
+    queryset = ChatMessage.objects.all()
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            chat = ChatRoom.objects.filter(room_id=request.data['room_id'])
+            if chat.exists():
+                chat = chat.first()
+                queryset = ChatMessage.objects.filter(chat = chat)
+                serializer = self.get_serializer(queryset, many=True)
+                
+                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+        except Exception as error:
+            print(error)
+            msg = "Please provide valid room id"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            message_id = request.data.get('message_id', None)
+            breakpoint()
+            queryset = ChatMessage.objects.filter(id = message_id)
+            serializer = self.get_serializer(queryset, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Chat Message update successfully'})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except ChatMessage.DoesNotExist:
+            return Response({'error': 'Chat Message not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            message_id = request.data.get('message_id', None)
+            queryset = ChatMessage.objects.get(id = message_id)
+            queryset.delete()
+            return Response({'message': 'Chat Message deleted successfully'})
+
+        except ChatMessage.DoesNotExist:
+            return Response({'error': 'Chat Message not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CallLLMView(APIView):
+    """For Call LLM Model class view"""
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = CallLLMSerializer
+
+    def post(self, request):
+        """Implement LLM Model Post method"""
+
+        try:
+            user_msg = request.data['message']
+            user = CustomUser.objects.filter(id=request.data['user_id'])
+            if user.exists():
+                self.user = user.first()
+                self.character = CharacterInfo.objects.filter(id=request.data['character_id']).first()
+                self.chat, created = ChatRoom.objects.get_or_create(user = self.user, character = self.character)
+                if self.chat.group_name is None:
+                    self.chat.group_name = self.chat.get_group_name
+                    self.chat.save()
+                character_attribute = self.set_character_info()
+            self.conversation = start_model_llama2(character_attribute)
+            self.response_LLM(user_msg)
+            return Response({'message':'success'},status=status.HTTP_200_OK,)
+        except Exception as error:
+            print(error)
+            msg = "Please provide valid user and character information"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+
+    def set_character_info(self):
+        custom_character_attribute = {}
+        custom_character_attribute['charName'] = self.character.character_name
+        custom_character_attribute['Short_Bio'] = self.character.short_bio
+        custom_character_attribute["Gender"] = self.character.character_gender
+        custom_character_attribute['initial_message'] = self.character.initial_message
+        character_attribute_list = self.character.prompt.lower().strip().split(',\n')
+        for i in character_attribute_list:
+            custom_character_attribute[i.split(":")[0]] = i.split(":")[1]
+        print(custom_character_attribute)
+        return custom_character_attribute
+    
+    def response_LLM(self, sender_user_message):
+        """Receive message from WebSocket and send to the group"""
+
+        response_instance = self.create_msg(self.chat, sender_user_message)
+
+        response = self.conversation.invoke(sender_user_message)
+        character_message = response["response"].replace("\n\n", "\n")
+        response_instance.character_message = character_message
+        response_instance.save()
+
+        self.sender_profile_pic = self.user.profile_image.url if self.user.profile_image else None
+        self.character_profile_pic = self.character.image.url if self.character.image else None
+
+        response_data = {
+                'type': 'chat_message',
+                'message_id':response_instance.id,
+                'group_name':self.chat.get_group_name,
+                'sender_user_message': sender_user_message,
+                'character_message': character_message,
+
+                'sender_user_id': self.user.id,
+                'sender_email': self.user.email,
+                'sender_profile_pic': self.sender_profile_pic,
+
+                'character_id': self.character.id,
+                'character_name': self.character.character_name,
+                'character_profile_pic': self.character_profile_pic,
+            }
+        return response_data
+
+    def create_msg(self, chatroom, user_msg):
+        """Storing user chat data into database"""
+        try:
+            if user_msg is not None:
+                chat_mag = ChatMessage.objects.create(chat=chatroom, user_message=user_msg)
+                chat_mag.save()
+                print('created', chat_mag.id)
+                return chat_mag
+        except Exception as e:
+            Response(f"{e} error occurs")
+

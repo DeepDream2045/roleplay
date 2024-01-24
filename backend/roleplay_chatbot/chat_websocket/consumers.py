@@ -106,6 +106,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             response = self.conversation.invoke(sender_user_message)
             character_message = response["response"].replace("\n\n", "\n")
 
+            response_instance.character_message = character_message
+            await database_sync_to_async(response_instance.save)()
+
             self.sender_profile_pic = self.user.profile_image.url if self.user.profile_image else None
             self.character_profile_pic = self.character.image.url if self.character.image else None
 
