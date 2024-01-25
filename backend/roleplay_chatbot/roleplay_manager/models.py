@@ -91,7 +91,7 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 class Tag(TimeStampedModel):
-    tag_id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     tag_name = models.CharField(max_length=50)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tag')
 
@@ -124,8 +124,8 @@ class CharacterInfo(models.Model):
     character_name = models.CharField(max_length=100)
     short_bio = models.TextField(null=False, blank=False)
     character_gender = models.CharField(max_length=10, null=False, blank=False)
-    tags = models.CharField(max_length=100, null=False, blank=False)
-    # tags = models.ManyToManyField("roleplay_manager.Tag", related_name='character_tag', null=True, blank=True)
+    # tags = models.CharField(max_length=100, null=False, blank=False)
+    tags = models.ManyToManyField("roleplay_manager.Tag", related_name='character_tag')
     model_id = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='character_model',)
     prompt = models.TextField(null=False, blank=False)
     character_visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)

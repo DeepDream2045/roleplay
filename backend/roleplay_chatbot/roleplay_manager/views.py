@@ -371,6 +371,22 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class UserCreatedCharacterInfoView(APIView):
+    permission_classes = [IsAuthenticated, IsValidUser]
+
+    def get(self, request, *args, **kwargs):
+        """ For fetch the user created character info """
+
+        try:
+            if request.user.is_authenticated:
+                queryset = CharacterInfo.objects.filter(user=request.user)
+                serializer = UserCreatedCharacterInfoSerializer(queryset, many=True)
+                return Response(serializer.data)
+        except Exception as error:
+            print("UserCreatedCharacterInfoView error: ", error)
+            return Response({'error': str(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     """Create Character Info View"""
 
@@ -389,7 +405,7 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         return context
     
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        queryset = CharacterInfo.objects.filter(character_visibility="public")
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -419,8 +435,67 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class TagInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+    """ Tag Info View"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = TagInfoSerializer
+    queryset = Tag.objects.all()
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+
+        context = super().get_serializer_context()
+        context.update({
+            "user": self.request.user
+        })
+        return context
+
+    def list(self, request, *args, **kwargs):
+        queryset = Tag.objects.all()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        """ 
+        update Tag information
+        request body : id
+        """
+
+        try:
+            id = request.data.get('id', None)
+            tag_info = Tag.objects.get(id=id)
+            serializer = self.get_serializer(tag_info, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Tag info update successfully'})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Tag.DoesNotExist:
+            return Response({'error': 'Tag info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        """ 
+        delete Tag information
+        request body : id
+        """
+
+        try:
+            id = request.data.get('id', None)
+            tag_info = Tag.objects.get(id=id)
+            tag_info.delete()
+            return Response({'message': 'Tag info deleted successfully'})
+        except Tag.DoesNotExist:
+            return Response({'error': 'Tag info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
-    """For Chat Message class view"""
+    """For Room Info class view"""
 
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = RoomInfoChatSerializer
@@ -428,14 +503,13 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
 
     def post(self, request, *args, **kwargs):
+        """ Create new room id post method """
         return self.create(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
         try:
-            user = CustomUser.objects.filter(id=request.data['user_id'])
-            if user.exists():
-                user = user.first()
-                queryset = ChatRoom.objects.filter(user = user)
+            if request.user.is_authenticated:
+                queryset = ChatRoom.objects.filter(user = request.user)
                 serializer = self.get_serializer(queryset, many=True)
                 return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
 
@@ -447,6 +521,11 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
             return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
+        """ 
+        update room information
+        request body : room_id
+        """
+
         try:
             room_id = request.data.get('room_id', None)
             queryset = ChatRoom.objects.get(room_id = room_id)
@@ -462,6 +541,11 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, *args, **kwargs):
+        """ 
+        delete room information
+        request body : room_id
+        """
+
         try:
             room_id = request.data.get('room_id', None)
             queryset = ChatRoom.objects.get(room_id = room_id)
@@ -564,7 +648,6 @@ class CallLLMView(APIView):
         return custom_character_attribute
     
     def response_LLM(self, sender_user_message):
-        """Receive message from WebSocket and send to the group"""
 
         response_instance = self.create_msg(self.chat, sender_user_message)
 

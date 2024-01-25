@@ -128,10 +128,40 @@ class ModelInfoSerializer(serializers.ModelSerializer):
         return model_info_instance
 
 
+class UserCreatedCharacterInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CharacterInfo
+        fields = '__all__'
+
+
 class CharacterInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = CharacterInfo
         fields = '__all__'
+        extra_kwargs = {'tags': {'required': False}}
+
+    def validate(self, attrs):
+        attrs['user'] = self.context["user"]
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        """creating character info object"""
+
+        tag_list = validated_data.pop('tags')
+        characterinfo_instance = CharacterInfo.objects.create(**validated_data)
+
+        for tag_obj in tag_list:
+            tag = Tag.objects.get(id=tag_obj.id)
+            characterinfo_instance.tags.add(tag)
+        characterinfo_instance.save()
+        return characterinfo_instance
+
+
+class TagInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = '__all__'
+        extra_kwargs = {'user': {'required': False}}
 
     def validate(self, attrs):
         attrs['user'] = self.context["user"]
@@ -140,8 +170,8 @@ class CharacterInfoSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """creating character info object"""
         
-        model_info_instance = CharacterInfo.objects.create(**validated_data)
-        return model_info_instance
+        taginfo_instance = Tag.objects.create(**validated_data)
+        return taginfo_instance
 
 
 class CallLLMSerializer(serializers.Serializer):
@@ -174,7 +204,6 @@ class RoomInfoChatSerializer(serializers.ModelSerializer):
         fields = ('room_id', 'type', 'group_name', 'user', 'character','chatroom', 'user_name', 'profile_image', 'character_name', 'character_image')
 
     def create(self, validated_data):
-        breakpoint()
         chat, created = ChatRoom.objects.get_or_create(user = validated_data['user'], character = validated_data['character'])
         if chat.group_name is None:
             chat.group_name = chat.get_group_name

@@ -23,8 +23,10 @@ urlpatterns = [
     path('login_request/', views.MagicLoginRequestView.as_view(), name='magic_login_request'),
     path('login_verify/', views.MagicLoginVerifyView.as_view(), name='magic_login_verify'),
 
-    path('character_info/', views.CharacterInfoView.as_view(), name='character_info'),
+    path('tag_info/', views.TagInfoView.as_view(), name='tag_info'),
     path('model_info/', views.ModelInfoAPIView.as_view(), name='model_info'),
+    path('character_info/', views.CharacterInfoView.as_view(), name='character_info'),
+    path('user_created_character_info/', views.UserCreatedCharacterInfoView.as_view(), name='user_created_character_info'),
 
     path('room_info/', views.RoomInfoChatView.as_view(), name='room_info'),
     path('chat_message/', views.ChatMessageView.as_view(), name='chat_message'),

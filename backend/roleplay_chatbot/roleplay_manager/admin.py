@@ -26,12 +26,17 @@ class TokenRequestAdmin(admin.ModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     """Create Tag admin for display on admin panel"""
 
-    list_display=['tag_id','tag_name', 'user']
+    list_display=['id', 'tag_name', 'user']
 
 class CharacterInfoAdmin(admin.ModelAdmin):
     """Create CharacterInfo admin for display on admin panel"""
 
-    list_display=['id','character_name', 'character_gender', 'tags']
+    list_display=['id','character_name', 'character_gender', 'display_tags']
+
+    def display_tags(self, obj):
+        return ", ".join([tag.name for tag in Tag.objects.all()])
+
+    display_tags.short_description = 'Tags'
 
 class ModelInfoAdmin(admin.ModelAdmin):
     """Create ModelInfo admin for display on admin panel"""
