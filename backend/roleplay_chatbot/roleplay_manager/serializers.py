@@ -128,12 +128,6 @@ class ModelInfoSerializer(serializers.ModelSerializer):
         return model_info_instance
 
 
-class UserCreatedCharacterInfoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CharacterInfo
-        fields = '__all__'
-
-
 class CharacterInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = CharacterInfo
@@ -219,4 +213,37 @@ class RoomInfoChatSerializer(serializers.ModelSerializer):
         return validated_data
 
 
+class UserInfoSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'full_name', 'profile_image']
+
+
+class CharacterModelInfoSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = ModelInfo
+        fields = [
+            'id','model_name','short_bio','model_location',
+            'prompt_template','temperature','repetition_penalty',
+            'top_p','top_k'
+        ]
+
+
+class CharacterTagInfoSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Tag
+        fields = ['id', 'tag_name']
+
+
+class UserCreatedCharacterInfoSerializer(serializers.ModelSerializer):
+    model_id = CharacterModelInfoSerializer(many=False, read_only=True)
+    user = UserInfoSerializer(many=False, read_only=True)
+    tags = CharacterTagInfoSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = CharacterInfo
+        fields = '__all__'
 
