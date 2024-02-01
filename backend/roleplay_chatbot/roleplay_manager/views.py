@@ -754,3 +754,101 @@ class CallLLMView(APIView):
         except Exception as e:
             Response(f"{e} error occurs")
 
+
+class FeedbackView(generics.ListCreateAPIView):
+    """For Feedback class view"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = FeedbackSerializer
+    # queryset = Feedback.objects.all()
+
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+
+        context = super().get_serializer_context()
+        context.update({
+            "user": self.request.user
+        })
+        return context
+
+    def list(self, request, *args, **kwargs):
+        try:
+            if request.user.is_authenticated:
+                queryset = Feedback.objects.filter(user = request.user)
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+            msg = "User information not found"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            logger.info(f"{datetime.now()} :: FeedbackView list error :: {error}")
+            msg = "Please provide valid user information"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileView(generics.ListAPIView, generics.RetrieveUpdateAPIView):
+    """For User Profile class view"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = UserProfileInfoSerializer
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            if request.user.is_authenticated:
+                queryset = CustomUser.objects.filter(id = request.user.id)
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+
+            msg = "User information not found"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            logger.info(f"{datetime.now()} :: UserProfileView list error :: {error}")
+            msg = "Please provide valid user information"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """ 
+        update user profile information
+        """
+
+        try:
+            if request.user.is_authenticated:
+                queryset = CustomUser.objects.get(id = request.user.id)
+                serializer = self.get_serializer(instance = queryset, data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response({'message': 'User Profile updated successfully'})
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            msg = "User information not found"
+            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'User Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(f"{datetime.now()} :: UserProfileView update error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CharacterInfoByIDView(APIView):
+    """Get Character Info by id View"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    
+    def post(self, request, *args, **kwargs):
+        """ 
+        Fetch Character information with character id
+        """
+        try:
+            if request.user.is_authenticated:
+                queryset = CharacterInfo.objects.filter(id=request.data['character_id'])
+                serializer = UserCreatedCharacterInfoSerializer(queryset, many=True)
+                return Response(serializer.data)
+        except CharacterInfo.DoesNotExist:
+            return Response({'error': 'Character Info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(f"{datetime.now()} :: CharacterInfoByIDView post error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

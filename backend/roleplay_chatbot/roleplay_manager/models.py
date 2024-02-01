@@ -181,5 +181,8 @@ class ChatMessage(TimeStampedModel):
 
 class Feedback(TimeStampedModel):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='feedback', null=True, blank=True)
-    rating = models.IntegerField()
-    review = models.TextField()
+    types = models.CharField()
+    content = models.TextField()
+
+    def __str__(self):
+        return f"{self.user.full_name}"

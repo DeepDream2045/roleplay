@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/token/verify/', TokenVerifyView.as_view(), name='token_refresh'),
+    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 
     path('register/', views.Registraion.as_view(), name='registration'),
     path('login/', views.LoginView.as_view(), name='login'),
@@ -26,8 +26,11 @@ urlpatterns = [
     path('tag_info/', views.TagInfoView.as_view(), name='tag_info'),
     path('model_info/', views.ModelInfoAPIView.as_view(), name='model_info'),
     path('character_info/', views.CharacterInfoView.as_view(), name='character_info'),
+    path('character_info_by_id/', views.CharacterInfoByIDView.as_view(), name='character_info'),
     path('public_character_info/', views.PublicCharacterInfoView.as_view(), name='public_character_info'),
 
     path('room_info/', views.RoomInfoChatView.as_view(), name='room_info'),
     path('chat_message/', views.ChatMessageView.as_view(), name='chat_message'),
+    path('feedback/', views.FeedbackView.as_view(), name='feedback'),
+    path('user_profile/', views.UserProfileView.as_view(), name='user_profile'),
 ]

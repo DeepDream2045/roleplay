@@ -34,19 +34,19 @@ class CharacterInfoAdmin(admin.ModelAdmin):
     list_display=['id','character_name', 'character_gender', 'display_tags']
 
     def display_tags(self, obj):
-        return ", ".join([tag.name for tag in Tag.objects.all()])
+        return ", ".join([tag.tag_name for tag in Tag.objects.all()])
 
     display_tags.short_description = 'Tags'
 
 class ModelInfoAdmin(admin.ModelAdmin):
     """Create ModelInfo admin for display on admin panel"""
 
-    list_display=['user_id','model_name']
+    list_display=['user','model_name']
 
 class FeedbackAdmin(admin.ModelAdmin):
     """Create Feedback admin for display on admin panel"""
 
-    list_display=['user_id','rating', 'review']
+    list_display=['user','types', 'content']
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(ChatRoom, ChatRoomAdmin)

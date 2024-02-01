@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import *
+import json
 
 class RegisterSerializer(serializers.ModelSerializer):
     """ User registration serializer view"""
@@ -129,6 +130,7 @@ class ModelInfoSerializer(serializers.ModelSerializer):
 
 
 class CharacterInfoSerializer(serializers.ModelSerializer):
+    tags = serializers.CharField()
     class Meta:
         model = CharacterInfo
         fields = '__all__'
@@ -136,7 +138,8 @@ class CharacterInfoSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs['user'] = self.context["user"]
-        return super().validate(attrs)
+        attrs["tags"] = json.loads(attrs['tags'])
+        return attrs
 
     def create(self, validated_data):
         """creating character info object"""
@@ -145,7 +148,7 @@ class CharacterInfoSerializer(serializers.ModelSerializer):
         characterinfo_instance = CharacterInfo.objects.create(**validated_data)
 
         for tag_obj in tag_list:
-            tag = Tag.objects.get(id=tag_obj.id)
+            tag = Tag.objects.get(id=tag_obj)
             characterinfo_instance.tags.add(tag)
         characterinfo_instance.save()
         return characterinfo_instance
@@ -247,3 +250,27 @@ class UserCreatedCharacterInfoSerializer(serializers.ModelSerializer):
         model = CharacterInfo
         fields = '__all__'
 
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Feedback
+        fields = '__all__'
+    
+    def validate(self, attrs):
+        attrs['user'] = self.context["user"]
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        """creating character info object"""
+        
+        feedback_instance = Feedback.objects.create(**validated_data)
+        return feedback_instance
+
+
+class UserProfileInfoSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'full_name', 'email', 'phone', 'profile_image', 'stay_sign']
+        extra_kwargs = {'email': {'required': False}}
