@@ -55,7 +55,7 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     email = models.EmailField(max_length=255, unique=True)
     password = models.CharField(max_length=100, null=True, blank=True)
     phone = models.CharField(max_length=15, null=True, blank=True)
-    profile_image = models.ImageField(upload_to='', default='', null=True, blank=True)
+    profile_image = models.ImageField(upload_to='profile/', default='', null=True, blank=True)
     email_confirmation = models.BooleanField(default=False)
     stay_sign = models.BooleanField(default=False, null=True, blank=True)
 
@@ -130,7 +130,7 @@ class CharacterInfo(models.Model):
     prompt = models.TextField(null=False, blank=False)
     character_visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)
     initial_message = models.TextField(null=True, blank=True)
-    image = models.ImageField(upload_to='',null=True, blank=True)
+    image = models.ImageField(upload_to='character/',null=True, blank=True)
     NSFW = models.BooleanField(default=False)
     lorebook = models.TextField(null=True, blank=True)
     language = models.CharField(max_length=50, default="ENGLISH", null=True, blank=True)

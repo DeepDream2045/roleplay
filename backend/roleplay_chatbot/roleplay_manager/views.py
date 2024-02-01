@@ -550,10 +550,22 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
     serializer_class = RoomInfoChatSerializer
     queryset = ChatRoom.objects.all()
 
-
-    def post(self, request, *args, **kwargs):
-        """ Create new room id post method """
-        return self.create(request, *args, **kwargs)
+    def create(self, request, *args, **kwargs):
+        try:
+            chat, created = ChatRoom.objects.get_or_create(user = request.data['user'], character = request.data['character'])
+            if chat.group_name is None:
+                chat.group_name = chat.get_group_name
+                chat.save()
+            if chat.character.initial_message is not None and created:
+                chat_mag = ChatMessage.objects.create(chat=chat, character_message=chat.character.initial_message)
+                chat_mag.save()
+            serializer = self.get_serializer(chat)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+        except ChatRoom.DoesNotExist:
+            return Response({'error': 'Room info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(f"{datetime.now()} :: RoomInfoChatView upadte error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def list(self, request, *args, **kwargs):
         try:

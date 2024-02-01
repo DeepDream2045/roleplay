@@ -129,8 +129,16 @@ class ModelInfoSerializer(serializers.ModelSerializer):
         return model_info_instance
 
 
+class UserInfoSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'full_name', 'profile_image']
+
+
 class CharacterInfoSerializer(serializers.ModelSerializer):
     tags = serializers.CharField()
+    user = UserInfoSerializer(many=False, read_only=True)
     class Meta:
         model = CharacterInfo
         fields = '__all__'
@@ -187,40 +195,22 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class RoomCharacterInfoSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CharacterInfo
+        fields = '__all__'
+
+
 class RoomInfoChatSerializer(serializers.ModelSerializer):
     """Serializer for Room Info Chat Message """
     chatroom = ChatMessageSerializer(many=True, read_only=True)
-    user_name = serializers.CharField(required=False)
-    profile_image = serializers.ImageField(required=False)
-    character_name = serializers.CharField(required=False)
-    character_image = serializers.ImageField(required=False)
-
+    user = UserInfoSerializer(many=False, read_only=True)
+    character = RoomCharacterInfoSerializer(many=False, read_only=True)
 
     class Meta:
         model = ChatRoom
-        fields = ('room_id', 'type', 'group_name', 'user', 'character','chatroom', 'user_name', 'profile_image', 'character_name', 'character_image')
-
-    def create(self, validated_data):
-        chat, created = ChatRoom.objects.get_or_create(user = validated_data['user'], character = validated_data['character'])
-        if chat.group_name is None:
-            chat.group_name = chat.get_group_name
-            chat.save()
-        response_data = {}
-        response_data['room_id'] = chat.room_id
-        response_data['group_name'] = chat.group_name
-        response_data['user_name'] = chat.user.full_name
-        response_data['profile_image'] = chat.user.profile_image
-        response_data['character_name'] = chat.character.character_name
-        response_data['character_image'] = chat.character.image
-        validated_data.update(response_data)
-        return validated_data
-
-
-class UserInfoSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model = CustomUser
-        fields = ['id', 'full_name', 'profile_image']
+        fields = ('room_id', 'type', 'group_name', 'user', 'character','chatroom')
 
 
 class CharacterModelInfoSerializer(serializers.ModelSerializer):
@@ -274,3 +264,5 @@ class UserProfileInfoSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'full_name', 'email', 'phone', 'profile_image', 'stay_sign']
         extra_kwargs = {'email': {'required': False}}
+
+
