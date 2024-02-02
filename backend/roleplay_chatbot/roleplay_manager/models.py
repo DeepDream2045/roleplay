@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from shortuuidfield import ShortUUIDField
+import random
 
 class BaseModel(models.Model):
     """Base model for created and modified date."""
@@ -52,6 +53,7 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
 
     id = models.AutoField(primary_key=True)
     full_name = models.CharField(max_length=60, null=True, blank=True)
+    username = models.CharField(max_length=255, unique=True)
     email = models.EmailField(max_length=255, unique=True)
     password = models.CharField(max_length=100, null=True, blank=True)
     phone = models.CharField(max_length=15, null=True, blank=True)
@@ -70,6 +72,18 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     def __str__(self):
         """Str method to return User Email name."""
         return '{}'.format(self.email)
+    
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        try:
+            # self.clean()
+            if not self.full_name:
+                self.full_name = f"{self.email.split('@')[0]}"
+            if not self.username:
+                self.username = f"{self.email.split('@')[0]}{random.randint(0000000, 9999999)}"
+        except Exception as e:
+            print(e)
+        super(CustomUser, self).save()
 
 class TokenRequest(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -181,7 +195,7 @@ class ChatMessage(TimeStampedModel):
 
 class Feedback(TimeStampedModel):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='feedback', null=True, blank=True)
-    types = models.CharField()
+    types = models.CharField(max_length=255)
     content = models.TextField()
 
     def __str__(self):

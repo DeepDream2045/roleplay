@@ -9,7 +9,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('id','full_name', 'email', 'phone','stay_sign','profile_image','password')
+        fields = ('id','full_name', 'username', 'email', 'phone','stay_sign','profile_image','password')
         depth=1
         extra_kwargs = {
             "password": {"write_only": True}
@@ -109,7 +109,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     """Serializer for CustomUser model to send user info"""
     class Meta:
         model = CustomUser
-        fields = ('id', 'full_name', 'email','profile_image')
+        fields = ('id', 'full_name', 'username', 'email','profile_image')
 
 
 class ModelInfoSerializer(serializers.ModelSerializer):
@@ -133,33 +133,21 @@ class UserInfoSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomUser
-        fields = ['id', 'full_name', 'profile_image']
+        fields = ['id', 'full_name', 'username', 'profile_image']
 
 
 class CharacterInfoSerializer(serializers.ModelSerializer):
-    tags = serializers.CharField()
     user = UserInfoSerializer(many=False, read_only=True)
+    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True, required=False)
+
     class Meta:
         model = CharacterInfo
         fields = '__all__'
-        extra_kwargs = {'tags': {'required': False}}
+        # extra_kwargs = {'tags': {'required': False}}
 
     def validate(self, attrs):
         attrs['user'] = self.context["user"]
-        attrs["tags"] = json.loads(attrs['tags'])
         return attrs
-
-    def create(self, validated_data):
-        """creating character info object"""
-
-        tag_list = validated_data.pop('tags')
-        characterinfo_instance = CharacterInfo.objects.create(**validated_data)
-
-        for tag_obj in tag_list:
-            tag = Tag.objects.get(id=tag_obj)
-            characterinfo_instance.tags.add(tag)
-        characterinfo_instance.save()
-        return characterinfo_instance
 
 
 class TagInfoSerializer(serializers.ModelSerializer):
@@ -242,6 +230,7 @@ class UserCreatedCharacterInfoSerializer(serializers.ModelSerializer):
 
 
 class FeedbackSerializer(serializers.ModelSerializer):
+    user = UserInfoSerializer(many=False, read_only=True)
     
     class Meta:
         model = Feedback
@@ -265,4 +254,12 @@ class UserProfileInfoSerializer(serializers.ModelSerializer):
         fields = ['id', 'full_name', 'email', 'phone', 'profile_image', 'stay_sign']
         extra_kwargs = {'email': {'required': False}}
 
+
+class PublicCharacterInfoSerializer(serializers.ModelSerializer):
+    user = UserInfoSerializer(many=False, read_only=True)
+    character_tag = CharacterTagInfoSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = CharacterInfo
+        fields = '__all__'
 

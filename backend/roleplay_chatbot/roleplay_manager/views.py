@@ -403,7 +403,7 @@ class PublicCharacterInfoView(APIView):
 
         try:
             queryset = CharacterInfo.objects.filter(character_visibility="public")
-            serializer = CharacterInfoSerializer(queryset, many=True)
+            serializer = PublicCharacterInfoSerializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as error:
             logger.info(f"{datetime.now()} :: PublicCharacterInfoView get error :: {error}")
@@ -426,6 +426,23 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             "user": self.request.user
         })
         return context
+
+    def create(self, request, *args, **kwargs):
+        try:
+            request_data = request.data.copy()
+            tag_list = request_data.pop('tags')[0]
+            tag_list = json.loads(str(tag_list))
+            serializer = self.get_serializer(data=request_data)
+            if serializer.is_valid():
+                for tag_obj in tag_list:
+                    tag = Tag.objects.get(id=tag_obj)
+                    serializer.validated_data['tags'].append(tag)
+                serializer.save()
+                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.info(f"{datetime.now()} :: CharacterInfoView create error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def list(self, request, *args, **kwargs):
         """ 
@@ -561,10 +578,8 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
                 chat_mag.save()
             serializer = self.get_serializer(chat)
             return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
-        except ChatRoom.DoesNotExist:
-            return Response({'error': 'Room info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: RoomInfoChatView upadte error :: {e}")
+            logger.info(f"{datetime.now()} :: RoomInfoChatView create error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def list(self, request, *args, **kwargs):
