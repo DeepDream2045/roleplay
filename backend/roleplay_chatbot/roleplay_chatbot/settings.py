@@ -216,6 +216,11 @@ EMAIL_USE_SSL = False
 # Frontend base route
 DASHBOARD_BASE_ROUTE=os.environ.get('DASHBOARD_BASE_ROUTE')
 
+# Google OAuth2 settings
+BASE_FRONTEND_URL = os.environ.get('DASHBOARD_BASE_ROUTE', default='http://localhost:3000')
+GOOGLE_OAUTH2_CLIENT_ID = os.environ.get('GOOGLE_OAUTH2_CLIENT_ID')
+GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH2_CLIENT_SECRET')
+
 LOGGING_DIR = os.path.join(BASE_DIR, 'log_files')  # Change this to your desired logs directory
 
 if not os.path.exists(LOGGING_DIR):

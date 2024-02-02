@@ -251,7 +251,7 @@ class UserProfileInfoSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomUser
-        fields = ['id', 'full_name', 'email', 'phone', 'profile_image', 'stay_sign']
+        fields = ['id', 'full_name', 'username', 'email', 'phone', 'profile_image', 'stay_sign']
         extra_kwargs = {'email': {'required': False}}
 
 

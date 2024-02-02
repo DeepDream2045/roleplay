@@ -23,6 +23,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # path('chat/', include('chat_websocket.urls')),
     path('', include('roleplay_manager.urls')),
+    path("api/", include("social_login.urls")),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
