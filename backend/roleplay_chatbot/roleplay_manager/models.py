@@ -60,6 +60,7 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     profile_image = models.ImageField(upload_to='profile/', default='', null=True, blank=True)
     email_confirmation = models.BooleanField(default=False)
     stay_sign = models.BooleanField(default=False, null=True, blank=True)
+    provider = models.CharField(max_length=60, default='magic link', null=True, blank=True)
 
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)

@@ -305,6 +305,7 @@ class MagicLoginVerifyView(APIView):
                 if not user.email_confirmation:
                     user.email_confirmation = True
                     user.is_active = True
+                    user.provider = 'magic link'
                 user.save()
                 profile_image = ''
                 try:
@@ -569,11 +570,12 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
     def create(self, request, *args, **kwargs):
         try:
-            chat, created = ChatRoom.objects.get_or_create(user = request.data['user'], character = request.data['character'])
+            character = CharacterInfo.objects.get(id=request.data['character'])
+            chat = ChatRoom.objects.create(user = request.user, character = character)
             if chat.group_name is None:
                 chat.group_name = chat.get_group_name
                 chat.save()
-            if chat.character.initial_message is not None and created:
+            if chat.character.initial_message is not None:
                 chat_mag = ChatMessage.objects.create(chat=chat, character_message=chat.character.initial_message)
                 chat_mag.save()
             serializer = self.get_serializer(chat)

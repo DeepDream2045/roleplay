@@ -217,7 +217,7 @@ EMAIL_USE_SSL = False
 DASHBOARD_BASE_ROUTE=os.environ.get('DASHBOARD_BASE_ROUTE')
 
 # Google OAuth2 settings
-BASE_FRONTEND_URL = os.environ.get('DASHBOARD_BASE_ROUTE', default='http://localhost:3000')
+GOOGLE_REDIRECT_URL = os.environ.get('GOOGLE_REDIRECT_URL', default='http://localhost:3000')
 GOOGLE_OAUTH2_CLIENT_ID = os.environ.get('GOOGLE_OAUTH2_CLIENT_ID')
 GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH2_CLIENT_SECRET')
 

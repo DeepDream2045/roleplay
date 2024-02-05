@@ -16,7 +16,6 @@ class GoogleLoginApi(PublicApiMixin, ApiErrorsMixin, APIView):
         error = serializers.CharField(required=False)
 
     def get(self, request, *args, **kwargs):
-        breakpoint()
         input_serializer = self.InputSerializer(data=request.GET)
         input_serializer.is_valid(raise_exception=True)
 
@@ -25,13 +24,13 @@ class GoogleLoginApi(PublicApiMixin, ApiErrorsMixin, APIView):
         code = validated_data.get('code')
         error = validated_data.get('error')
 
-        login_url = f'{settings.BASE_FRONTEND_URL}/login'
+        login_url = f'{settings.DASHBOARD_BASE_ROUTE}'
     
         if error or not code:
             params = urlencode({'error': error})
             return redirect(f'{login_url}?{params}')
 
-        redirect_uri = f'{settings.BASE_FRONTEND_URL}/google/'
+        redirect_uri = f'{settings.GOOGLE_REDIRECT_URL}'
         access_token = google_get_access_token(code=code, redirect_uri=redirect_uri)
 
         user_data = google_get_user_info(access_token=access_token)
@@ -47,7 +46,9 @@ class GoogleLoginApi(PublicApiMixin, ApiErrorsMixin, APIView):
             return Response(response_data)
         except CustomUser.DoesNotExist:
             user = CustomUser.objects.create(email=user_data['email'])
-         
+            user.provider = 'google'
+            user.save()
+
             access_token, refresh_token = generate_tokens_for_user(user)
             response_data = {
                 'user': UserSerializer(user).data,

@@ -30,14 +30,11 @@ def google_get_access_token(*, code: str, redirect_uri: str) -> str:
         'grant_type': 'authorization_code'
     }
 
-
     response = requests.post(GOOGLE_ACCESS_TOKEN_OBTAIN_URL, data=data)
 
     if not response.ok:
         raise ValidationError('Failed to obtain access token from Google.')
-
     access_token = response.json()['access_token']
-
     return access_token
 
 

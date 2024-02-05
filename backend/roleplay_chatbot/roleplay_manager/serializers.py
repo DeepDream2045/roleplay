@@ -252,12 +252,12 @@ class UserProfileInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'full_name', 'username', 'email', 'phone', 'profile_image', 'stay_sign']
-        extra_kwargs = {'email': {'required': False}}
+        extra_kwargs = {'email': {'required': False}, 'username': {'required': False}}
 
 
 class PublicCharacterInfoSerializer(serializers.ModelSerializer):
     user = UserInfoSerializer(many=False, read_only=True)
-    character_tag = CharacterTagInfoSerializer(many=False, read_only=True)
+    tags = CharacterTagInfoSerializer(many=True, read_only=True)
 
     class Meta:
         model = CharacterInfo
