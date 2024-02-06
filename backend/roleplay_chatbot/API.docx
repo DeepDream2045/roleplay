@@ -484,7 +484,7 @@ Response:
 
 
 ##############################################################################
-For user created character info APIs
+For Public access character info APIs
 Request URL: http://127.0.0.1:8000/public_character_info/
 Request Headers:
     Authorization: Bearer access_token
@@ -651,6 +651,26 @@ Response:
     "user": 1
 }
 
+##############################################################################
+For Public Tag Info APIs
+Request URL: http://127.0.0.1:8000/public_tag_info/
+----------------------------------------------------------
+Request Method: GET
+Response:
+[
+    {
+        "id": 1,
+        "tag_name": "Anime"
+    },
+    {
+        "id": 2,
+        "tag_name": "Male"
+    },
+    {
+        "id": 3,
+        "tag_name": "Female"
+    }
+]
 
 ##############################################################################
 For WebSocket APIs

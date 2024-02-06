@@ -317,6 +317,7 @@ class MagicLoginVerifyView(APIView):
                 response_data = {}
                 response_data['id'] = user.id
                 response_data['full_name'] = user.full_name
+                response_data['username'] = user.username
                 response_data['email'] = user.email
                 response_data['profile_image'] = profile_image
                 response_data['stay_sign'] = user.stay_sign
@@ -467,8 +468,16 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         try:
             id = request.data.get('id', None)
             character_info = CharacterInfo.objects.get(id=id)
-            serializer = self.get_serializer(character_info, data=request.data)
+            request_data = request.data.copy()
+            if 'tags' in request_data.keys():
+                tag_list = request_data.pop('tags')[0]
+                tag_list = json.loads(str(tag_list))
+            serializer = self.get_serializer(character_info, data=request_data)
             if serializer.is_valid():
+                if 'tags' in request_data.keys():
+                    for tag_obj in tag_list:
+                        tag = Tag.objects.get(id=tag_obj)
+                        serializer.validated_data['tags'].append(tag)
                 serializer.save()
                 return Response({'message': 'character info update successfully'})
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
