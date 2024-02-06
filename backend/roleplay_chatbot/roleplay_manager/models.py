@@ -122,7 +122,7 @@ class ModelInfo(TimeStampedModel):
     repetition_penalty = models.FloatField(default=1.15, validators=[MinValueValidator(0.01), MaxValueValidator(2)])
     top_p = models.FloatField(default=0.8, validators=[MinValueValidator(0.01), MaxValueValidator(0.99)])
     top_k = models.IntegerField(default=50, validators=[MinValueValidator(-1), MaxValueValidator(100)])
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='model_infos', null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='model_infos')
 
     def __str__(self):
         return self.model_name
@@ -141,7 +141,7 @@ class CharacterInfo(models.Model):
     character_gender = models.CharField(max_length=10, null=False, blank=False)
     # tags = models.CharField(max_length=100, null=False, blank=False)
     tags = models.ManyToManyField("roleplay_manager.Tag", related_name='character_tag')
-    model_id = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='character_model',)
+    model_id = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='character_model')
     prompt = models.TextField(null=False, blank=False)
     character_visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)
     initial_message = models.TextField(null=True, blank=True)
@@ -149,7 +149,7 @@ class CharacterInfo(models.Model):
     NSFW = models.BooleanField(default=False)
     lorebook = models.TextField(null=True, blank=True)
     language = models.CharField(max_length=50, default="ENGLISH", null=True, blank=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='character_infos', null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='character_infos')
     created_date = models.DateTimeField(auto_now_add=True, null=True)
     modified_date = models.DateTimeField(auto_now=True, null=True)
 
@@ -167,8 +167,8 @@ class ChatRoom(TimeStampedModel):
     room_id = ShortUUIDField()
     type = models.PositiveIntegerField(choices=ROOM_TYPE, default=DM_ROOM)
     group_name = models.CharField(max_length=30, null=True, blank=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sender', null=True, blank=True)
-    character = models.ForeignKey(CharacterInfo, on_delete=models.CASCADE, related_name='character', null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sender')
+    character = models.ForeignKey(CharacterInfo, on_delete=models.CASCADE, related_name='character')
     # member = models.ManyToManyField('users.CustomUser', related_name='room_members')
     # is_active = models.BooleanField(default=False)
 
@@ -186,7 +186,7 @@ class ChatRoom(TimeStampedModel):
 class ChatMessage(TimeStampedModel):
     """creating chat message table for store chat data"""
 
-    chat = models.ForeignKey(ChatRoom, on_delete=models.SET_NULL, related_name='chatroom', null=True)
+    chat = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='chatroom')
     user_message = models.TextField(null=True, blank=True)
     character_message = models.TextField(null=True, blank=True)
     is_edited = models.BooleanField(default=False)
@@ -195,7 +195,7 @@ class ChatMessage(TimeStampedModel):
         return self.chat.user.email
 
 class Feedback(TimeStampedModel):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='feedback', null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='feedback')
     types = models.CharField(max_length=255)
     content = models.TextField()
 

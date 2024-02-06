@@ -17,7 +17,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Constructor for initialize group id and room group name """
 
         self.user = None
-        self.chsracter = None
+        self.character = None
         self.room_group_id =None
         self.chat = None
         return None

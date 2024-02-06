@@ -380,7 +380,6 @@ Response:
 Request Method: Post
 Request Body:
 {
-    "user":1,
     "character":3
 }
 
@@ -655,7 +654,7 @@ Response:
 
 ##############################################################################
 For WebSocket APIs
-Request URL: ws://localhost:8000/asw/user_id/character_id/
+Request URL: ws://localhost:8000/asw/user_id/room_id/
 
 Request Body:
 {
@@ -664,15 +663,14 @@ Request Body:
 
 Response:
 {
-    "message_id": 4,
-    "sender_user_message": "who is modi?",
-    "character_message": " Well, my friend, He's the Prime Minister of India",
-
-    "sender_user_id": 2,
-    "sender_email": "test@test.com",
-    "sender_profile_pic": null,
-
-    "character_id": 1,
-    "character_name": "Elon Musk",
-    "character_profile_pic": null
+    "message_id": 132,
+    "sender_user_message": "tell me about yourself",
+    "character_message": "  Of course! *adjusts glasses* Hello there! *looks directly into eyes* My name is Hermione Jean Granger,",
+    "sender_user_id": 1,
+    "sender_name": "Roleplay",
+    "sender_username": "roleplay",
+    "sender_profile_pic": "/media/image/profile/images123.jpeg",
+    "character_id": 26,
+    "character_name": "Hermione Granger",
+    "character_profile_pic": "/media/image/character/e9bf8859-073e-497b-9451-7688f01842c5_yVAAY79.webp"
 }
