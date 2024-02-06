@@ -496,6 +496,19 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class TagListInfoView(generics.ListAPIView):
+    """ Tag List View"""
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = Tag.objects.all()
+            serializer = CharacterTagInfoSerializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.info(f"{datetime.now()} :: TagInfoView update error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class TagInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     """ Tag Info View"""
 
