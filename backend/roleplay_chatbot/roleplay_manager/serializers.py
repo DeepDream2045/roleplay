@@ -2,6 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import *
+from rest_framework.exceptions import ValidationError
+from django.db import transaction
+
 import json
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -112,21 +115,54 @@ class CustomUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'full_name', 'username', 'email','profile_image')
 
 
+class CustomizedModelValuesSerializer(serializers.ModelSerializer):
+    """Serializer for UserCustomModel model to send customized info"""
+
+    class Meta:
+        model = UserCustomModel
+        fields = '__all__'
+
+
 class ModelInfoSerializer(serializers.ModelSerializer):
+    """Serializer for ModelInfo model to send Modals info"""
+
     class Meta:
         model = ModelInfo
         fields = '__all__'
-        # extra_kwargs = {'user': {'required': False}} 
+        read_only_fields = ['user']  
 
     def validate(self, attrs):
-        attrs['user'] = self.context["user"]
-        return super().validate(attrs)
+        # Check if the model_name is unique
+        model_name = attrs.get('model_name', '')
+        if ModelInfo.objects.filter(model_name=model_name).exists():
+            raise serializers.ValidationError({'model_name': 'Model name is already exist.'})
+        return attrs
 
+    @transaction.atomic
     def create(self, validated_data):
-        """creating model info object"""
-        
+        validated_data['user'] = self.context['request'].user
         model_info_instance = ModelInfo.objects.create(**validated_data)
+        customized_values = self._create_custom_modal(self.context['request'].user, model_info_instance)        
         return model_info_instance
+ 
+
+    @transaction.atomic
+    def _create_custom_modal(self, user,model_info_instance):
+        
+        customized_values = UserCustomModel.objects.create(
+            user=user,
+            custom_model_info=model_info_instance
+        )
+        return customized_values
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        user_representation = CustomUserSerializer(instance.user).data
+        representation['user'] = user_representation
+        customized_values_representation = CustomizedModelValuesSerializer(instance.custom_model_info.first()).data
+        representation['custom_model_info'] = customized_values_representation
+
+        return representation
 
 
 class UserInfoSerializer(serializers.ModelSerializer):

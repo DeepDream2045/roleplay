@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from .serializers import *
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from roleplay_manager.permission import IsValidUser
+from roleplay_manager.permission import IsValidUser, isUserDeveloper
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import *
 from bot.pipeline import *
@@ -332,7 +332,7 @@ class MagicLoginVerifyView(APIView):
 
 class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
 
-    permission_classes = [IsAuthenticated, IsValidUser]
+    permission_classes = [IsAuthenticated, IsValidUser, isUserDeveloper]
     serializer_class = ModelInfoSerializer
     queryset = ModelInfo.objects.all()
 
@@ -358,26 +358,37 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
         except Exception as e:
             logger.info(f"{datetime.now()} :: ModelInfoAPIView list error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+        
     def update(self, request, *args, **kwargs):
         """ 
-        Update Model information
-        request body : Model id with other values need to update
+        Update Model information including child model values.
+        Request body: Model id with other values need to update.
         """
 
         try:
             id = request.data.get('id', None)
             model_info = ModelInfo.objects.get(id=id)
-            serializer = self.get_serializer(model_info, data=request.data)
+            
+            # Update the ModelInfo instance
+            serializer = self.get_serializer(model_info, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
-                return Response({'message': 'LLM Model info update successfully'})
+                    
+                custom_model_instance = model_info.custom_model_info.first()
+                custom_serializer = CustomizedModelValuesSerializer(custom_model_instance, data=request.data.get('custom_model_info', {}), partial=True)
+                if custom_serializer.is_valid():
+                    custom_serializer.save(partial=True)
+                    return Response({'message': 'LLM Model info update successfully'})
+            
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
         except ModelInfo.DoesNotExist:
             return Response({'error': 'LLM Model info not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         except Exception as e:
             logger.info(f"{datetime.now()} :: ModelInfoAPIView update error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
     
     def delete(self, request, *args, **kwargs):
         """ 
@@ -397,6 +408,57 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
+    """ 
+        CustomUpdateByUser for updating customized values
+    """
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = CustomizedModelValuesSerializer
+    
+    def get_object(self):
+        model_id = self.request.data.get('id')
+        user = self.request.user
+
+        try:
+            instance = UserCustomModel.objects.get(user=user, custom_model_info_id=model_id)
+        except UserCustomModel.DoesNotExist:
+            instance = UserCustomModel.objects.create(user=user, custom_model_info_id=model_id)
+
+        return instance
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        context = super().get_serializer_context()
+        context.update({
+            "user": self.request.user
+        })
+        return context
+      
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            instance.delete()
+            return Response({'message': ' Model customized info deleted successfully'})
+        except UserCustomModel.DoesNotExist:
+            return Response({'error': 'details not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        
 class PublicCharacterInfoView(APIView):
     # permission_classes = [IsAuthenticated, IsValidUser]
 
@@ -427,7 +489,7 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         context.update({
             "user": self.request.user
         })
-        return context
+        return context  
 
     def create(self, request, *args, **kwargs):
         try:
@@ -454,6 +516,8 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             if request.user.is_authenticated:
                 queryset = CharacterInfo.objects.filter(user=request.user)
                 serializer = UserCreatedCharacterInfoSerializer(queryset, many=True)
+                if not queryset.exists():
+                    return Response({'message': 'No characters found for the user'})
                 return Response(serializer.data)
         except Exception as e:
             logger.info(f"{datetime.now()} :: CharacterInfoView list error :: {e}")
@@ -725,7 +789,7 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
             logger.info(f"{datetime.now()} :: ChatMessageView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+   
 class CallLLMView(APIView):
     """For Call LLM Model class view"""
     permission_classes = [IsAuthenticated, IsValidUser]
@@ -768,7 +832,6 @@ class CallLLMView(APIView):
     def response_LLM(self, sender_user_message):
 
         response_instance = self.create_msg(self.chat, sender_user_message)
-
         response = self.conversation.invoke(sender_user_message)
         character_message = response["response"].replace("\n\n", "\n")
         response_instance.character_message = character_message

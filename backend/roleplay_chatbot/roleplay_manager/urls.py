@@ -36,4 +36,8 @@ urlpatterns = [
     path('chat_message/', views.ChatMessageView.as_view(), name='chat_message'),
     path('feedback/', views.FeedbackView.as_view(), name='feedback'),
     path('user_profile/', views.UserProfileView.as_view(), name='user_profile'),
+    
+    path('update-modal-configuration/', views.CustomUpdateByUser.as_view(), name='update_default_values'),
+    
+    
 ]

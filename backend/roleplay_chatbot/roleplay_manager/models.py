@@ -65,6 +65,7 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    is_developer = models.BooleanField(default=False)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -117,15 +118,23 @@ class ModelInfo(TimeStampedModel):
     model_name = models.CharField(max_length=255)
     short_bio = models.TextField(null=False, blank=False)
     model_location = models.CharField(max_length=255)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='model_infos')
+
+    def __str__(self):
+        return self.model_name
+
+class UserCustomModel(TimeStampedModel):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='custom_user_modal')
+    custom_model_info = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='custom_model_info')
+    is_default = models.BooleanField(default=True)
     prompt_template = models.TextField(default="")
     temperature = models.FloatField(default=0.85, validators=[MinValueValidator(0), MaxValueValidator(2)])
     repetition_penalty = models.FloatField(default=1.15, validators=[MinValueValidator(0.01), MaxValueValidator(2)])
     top_p = models.FloatField(default=0.8, validators=[MinValueValidator(0.01), MaxValueValidator(0.99)])
     top_k = models.IntegerField(default=50, validators=[MinValueValidator(-1), MaxValueValidator(100)])
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='model_infos')
 
     def __str__(self):
-        return self.model_name
+        return f"{self.id}"
 
 class CharacterInfo(models.Model):
 

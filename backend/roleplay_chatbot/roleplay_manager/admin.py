@@ -1,12 +1,12 @@
 from django.contrib import admin
 from .models import (CustomUser, ChatRoom, ChatMessage, TokenRequest,
-                      Tag, CharacterInfo, ModelInfo, Feedback)
+                      Tag, CharacterInfo, ModelInfo, Feedback, UserCustomModel)
 
 # Register your models here.
 class CustomUserAdmin(admin.ModelAdmin):
     """Create CustomUser admin for display on admin panel"""
 
-    list_display = ('id','full_name', 'username', 'email', 'provider')
+    list_display = ('id', 'full_name', 'username', 'email', 'provider')
 
 class ChatMessageAdmin(admin.ModelAdmin):
     """Create ChatMessage admin for display on admin panel"""
@@ -21,7 +21,7 @@ class ChatRoomAdmin(admin.ModelAdmin):
 class TokenRequestAdmin(admin.ModelAdmin):
     """Create TokenRequest admin for display on admin panel"""
 
-    list_display=['user','token', 'expiration_time']
+    list_display=['user', 'token', 'expiration_time']
 
 class TagAdmin(admin.ModelAdmin):
     """Create Tag admin for display on admin panel"""
@@ -31,7 +31,7 @@ class TagAdmin(admin.ModelAdmin):
 class CharacterInfoAdmin(admin.ModelAdmin):
     """Create CharacterInfo admin for display on admin panel"""
 
-    list_display=['id','character_name', 'character_gender', 'display_tags']
+    list_display=['id', 'character_name', 'character_gender', 'display_tags']
 
     def display_tags(self, obj):
         return ", ".join([tag.tag_name for tag in Tag.objects.all()])
@@ -41,12 +41,17 @@ class CharacterInfoAdmin(admin.ModelAdmin):
 class ModelInfoAdmin(admin.ModelAdmin):
     """Create ModelInfo admin for display on admin panel"""
 
-    list_display=['user','model_name']
+    list_display=['user', 'model_name', 'short_bio', 'model_location']
 
 class FeedbackAdmin(admin.ModelAdmin):
     """Create Feedback admin for display on admin panel"""
 
-    list_display=['user','types', 'content']
+    list_display=['user', 'types', 'content']
+    
+class CustomizedModelValuesAdmin(admin.ModelAdmin):
+    list_display = ['user', 'custom_model_info', 'temperature', 'repetition_penalty', 'top_p', 'top_k']
+
+    
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(ChatRoom, ChatRoomAdmin)
@@ -56,3 +61,5 @@ admin.site.register(Tag, TagAdmin)
 admin.site.register(CharacterInfo, CharacterInfoAdmin)
 admin.site.register(ModelInfo, ModelInfoAdmin)
 admin.site.register(Feedback, FeedbackAdmin)
+admin.site.register(UserCustomModel, CustomizedModelValuesAdmin)
+
