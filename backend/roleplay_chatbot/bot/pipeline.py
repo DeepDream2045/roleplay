@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import torch
 import subprocess
 from langchain.chains import ConversationChain
@@ -15,8 +16,8 @@ except Exception as error:
 import gc
 gc.collect()
 
-from dotenv import load_dotenv
 load_dotenv(".env")
+
 
 def load_llama2_model():
     if torch.backends.mps.is_available():
@@ -27,21 +28,27 @@ def load_llama2_model():
         DEVICE_TYPE = "cpu"
 
     # Load model and pipeline
-    LLM = load_llm_model_langchain(model_id = MODEL_ID, device_type = DEVICE_TYPE, cache_dir = MODELS_PATH, set_manual_gpu=True)
+    LLM = load_llm_model_langchain(
+        model_id=MODEL_ID, device_type=DEVICE_TYPE, cache_dir=MODELS_PATH, set_manual_gpu=True)
     return LLM
+
 
 def start_model_llama2(custom_character_attribute):
 
     # Main code
     LLM = load_llama2_model()
     if not custom_character_attribute['initial_message'].strip() in [None, ""]:
-        print(f"Hello I am {custom_character_attribute['charName']}, {custom_character_attribute['initial_message']}")
+        print(
+            f"Hello I am {custom_character_attribute['charName']}, {custom_character_attribute['initial_message']}")
     else:
-        print(f"Hello I am {custom_character_attribute['charName']}, How can I help you today.")
-    system_prompt = create_persona_template(custom_character_attribute['charName'], custom_character_attribute)
+        print(
+            f"Hello I am {custom_character_attribute['charName']}, How can I help you today.")
+    system_prompt = create_persona_template(
+        custom_character_attribute['charName'], custom_character_attribute)
     prompt, memory = get_prompt_template(system_prompt=system_prompt, LLM=LLM)
 
-    conversation = ConversationChain(llm=LLM, verbose=False, prompt = prompt, memory = memory)
+    conversation = ConversationChain(
+        llm=LLM, verbose=False, prompt=prompt, memory=memory)
     return conversation
 
 
@@ -59,8 +66,7 @@ if __name__ == "__main__":
             break
         print("user_input:-", user_input)
         character_response = conversation.invoke(user_input)
-        response =  character_response["response"].replace("\n\n", "\n")
+        response = character_response["response"].replace("\n\n", "\n")
         print(response)
         print(f"{custom_character_attribute['charName']}:-", response)
         print()
-

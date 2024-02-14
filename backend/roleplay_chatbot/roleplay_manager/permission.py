@@ -12,18 +12,21 @@ class IsValidUser(permissions.BasePermission):
     def has_permission(self, request, view):
         _ = self.message
         if request.META.get('HTTP_USER_REFRESH_TOKEN', None):
-            outstanding = OutstandingToken.objects.filter(token=request.META['HTTP_USER_REFRESH_TOKEN']).last()
+            outstanding = OutstandingToken.objects.filter(
+                token=request.META['HTTP_USER_REFRESH_TOKEN']).last()
             if outstanding:
                 if BlacklistedToken.objects.filter(token_id=outstanding.id).exists():
                     raise serializers.ValidationError(code=400)
             return bool(request.user and request.user.is_authenticated)
-        raise serializers.ValidationError(detail='You dont have permission to perform this action.', code=400)
+        raise serializers.ValidationError(
+            detail='You dont have permission to perform this action.', code=400)
 
 
 class isUserDeveloper(permissions.BasePermission):
     """
     Allow access to only developers
     """
+
     def has_permission(self, request, view):
         # return request.user.is_authenticated and request.user.is_developer
-         return request.user.is_developer
+        return request.user.is_developer

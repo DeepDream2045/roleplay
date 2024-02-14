@@ -134,14 +134,15 @@ class ModelInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ModelInfo
         fields = '__all__'
-        read_only_fields = ['user']  
+        read_only_fields = ['user']
         # extra_kwargs = {'user': {'required': False}}
 
     def validate(self, attrs):
         # Check if the model_name is unique
         model_name = attrs.get('model_name', '')
         if ModelInfo.objects.filter(model_name=model_name).exists():
-            raise serializers.ValidationError({'model_name': 'Model name is already exist.'})
+            raise serializers.ValidationError(
+                {'model_name': 'Model name is already exist.'})
         return attrs
 
     @transaction.atomic
@@ -150,24 +151,25 @@ class ModelInfoSerializer(serializers.ModelSerializer):
 
         validated_data['user'] = self.context['request'].user
         model_info_instance = ModelInfo.objects.create(**validated_data)
-        customized_values = self._create_custom_modal(self.context['request'].user, model_info_instance)        
+        customized_values = self._create_custom_modal(
+            self.context['request'].user, model_info_instance)
         return model_info_instance
- 
 
     @transaction.atomic
-    def _create_custom_modal(self, user,model_info_instance):
-        
+    def _create_custom_modal(self, user, model_info_instance):
+
         customized_values = UserCustomModel.objects.create(
             user=user,
             custom_model_info=model_info_instance
         )
         return customized_values
-    
+
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         user_representation = CustomUserSerializer(instance.user).data
         representation['user'] = user_representation
-        customized_values_representation = CustomizedModelValuesSerializer(instance.custom_model_info.first()).data
+        customized_values_representation = CustomizedModelValuesSerializer(
+            instance.custom_model_info.first()).data
         representation['custom_model_info'] = customized_values_representation
 
         return representation
@@ -316,11 +318,13 @@ class EntryInfoSerializer(serializers.ModelSerializer):
     """ Serializer for Lorebook Entry Info """
 
     keys = serializers.ReadOnlyField(source='convert_keys_list')
-    secondary_keys = serializers.ReadOnlyField(source='convert_secondary_keys_list')
+    secondary_keys = serializers.ReadOnlyField(
+        source='convert_secondary_keys_list')
 
     class Meta:
         model = LorebookEntries
-        fields = ('name', 'keys', 'condition', 'secondary_keys', 'content', 'probability', 'order', 'is_enabled', 'is_exclude_recursion', 'lorebook')
+        fields = ('name', 'keys', 'condition', 'secondary_keys', 'content',
+                  'probability', 'order', 'is_enabled', 'is_exclude_recursion', 'lorebook')
         # extra_kwargs = {'user': {'required': False}}
 
 

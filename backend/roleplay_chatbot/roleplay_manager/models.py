@@ -72,7 +72,7 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     is_developer = models.BooleanField(default=False)
-    
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
     objects = CustomUserManager()
@@ -129,14 +129,18 @@ class ModelInfo(TimeStampedModel):
     model_name = models.CharField(max_length=255)
     short_bio = models.TextField(null=False, blank=False)
     model_location = models.CharField(max_length=255)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='model_infos')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='model_infos')
 
     def __str__(self):
         return self.model_name
 
+
 class UserCustomModel(TimeStampedModel):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='custom_user_modal')
-    custom_model_info = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='custom_model_info')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='custom_user_modal')
+    custom_model_info = models.ForeignKey(
+        ModelInfo, on_delete=models.CASCADE, related_name='custom_model_info')
     is_default = models.BooleanField(default=True)
     prompt_template = models.TextField(default="")
     temperature = models.FloatField(default=0.85, validators=[
@@ -147,8 +151,6 @@ class UserCustomModel(TimeStampedModel):
                               MinValueValidator(0.01), MaxValueValidator(0.99)])
     top_k = models.IntegerField(default=50, validators=[
                                 MinValueValidator(-1), MaxValueValidator(100)])
-    user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='model_infos')
 
     def __str__(self):
         return f"{self.id}"
@@ -189,11 +191,14 @@ class CharacterInfo(models.Model):
     def __str__(self):
         return self.character_name
 
+
 class Lorebook(TimeStampedModel):
     name = models.CharField(max_length=200)
     description = models.TextField(null=True, blank=True)
     is_public = models.BooleanField(default=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='lorebook_infos')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='lorebook_infos')
+
 
 class LorebookEntries(TimeStampedModel):
     name = models.CharField(max_length=200)
@@ -205,13 +210,14 @@ class LorebookEntries(TimeStampedModel):
     order = models.IntegerField(default=100)
     is_enabled = models.BooleanField(default=True)
     is_exclude_recursion = models.BooleanField(default=False)
-    lorebook = models.ForeignKey(Lorebook, on_delete=models.CASCADE, related_name='lorebook_entry_infos')
+    lorebook = models.ForeignKey(
+        Lorebook, on_delete=models.CASCADE, related_name='lorebook_entry_infos')
 
     @property
     def convert_keys_list(self):
         self.keys = json.loads(str(self.keys))
         return self.keys
-    
+
     @property
     def convert_secondary_keys_list(self):
         self.keys = json.loads(str(self.keys))

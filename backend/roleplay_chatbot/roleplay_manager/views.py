@@ -377,7 +377,7 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
             logger.info(
                 f"{datetime.now()} :: ModelInfoAPIView list error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
     def update(self, request, *args, **kwargs):
         """ 
         Update Model information including child model values.
@@ -387,29 +387,30 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
         try:
             id = request.data.get('id', None)
             model_info = ModelInfo.objects.get(id=id)
-            
+
             # Update the ModelInfo instance
-            serializer = self.get_serializer(model_info, data=request.data, partial=True)
+            serializer = self.get_serializer(
+                model_info, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
-                    
+
                 custom_model_instance = model_info.custom_model_info.first()
-                custom_serializer = CustomizedModelValuesSerializer(custom_model_instance, data=request.data.get('custom_model_info', {}), partial=True)
+                custom_serializer = CustomizedModelValuesSerializer(
+                    custom_model_instance, data=request.data.get('custom_model_info', {}), partial=True)
                 if custom_serializer.is_valid():
                     custom_serializer.save(partial=True)
                     return Response({'message': 'LLM Model info update successfully'})
-            
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         except ModelInfo.DoesNotExist:
             return Response({'error': 'LLM Model info not found'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         except Exception as e:
             logger.info(
                 f"{datetime.now()} :: ModelInfoAPIView update error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    
+
     def delete(self, request, *args, **kwargs):
         """ 
         delete Model information
@@ -435,15 +436,17 @@ class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
     """
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = CustomizedModelValuesSerializer
-    
+
     def get_object(self):
         model_id = self.request.data.get('id')
         user = self.request.user
 
         try:
-            instance = UserCustomModel.objects.get(user=user, custom_model_info_id=model_id)
+            instance = UserCustomModel.objects.get(
+                user=user, custom_model_info_id=model_id)
         except UserCustomModel.DoesNotExist:
-            instance = UserCustomModel.objects.create(user=user, custom_model_info_id=model_id)
+            instance = UserCustomModel.objects.create(
+                user=user, custom_model_info_id=model_id)
 
         return instance
 
@@ -456,7 +459,7 @@ class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
             "user": self.request.user
         })
         return context
-      
+
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -464,7 +467,8 @@ class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -479,7 +483,7 @@ class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
         except UserCustomModel.DoesNotExist:
             return Response({'error': 'details not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        
+
 class PublicCharacterInfoView(APIView):
     # permission_classes = [IsAuthenticated, IsValidUser]
 
@@ -512,7 +516,7 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         context.update({
             "user": self.request.user
         })
-        return context  
+        return context
 
     def create(self, request, *args, **kwargs):
         try:
@@ -539,7 +543,8 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         try:
             if request.user.is_authenticated:
                 queryset = CharacterInfo.objects.filter(user=request.user)
-                serializer = UserCreatedCharacterInfoSerializer(queryset, many=True)
+                serializer = UserCreatedCharacterInfoSerializer(
+                    queryset, many=True)
                 if not queryset.exists():
                     return Response({'message': 'No characters found for the user'})
                 return Response(serializer.data)
@@ -826,7 +831,7 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
                 f"{datetime.now()} :: ChatMessageView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-   
+
 class CallLLMView(APIView):
     """For Call LLM Model class view"""
     permission_classes = [IsAuthenticated, IsValidUser]
@@ -1073,7 +1078,7 @@ class LorebookInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIVi
             logger.info(
                 f"{datetime.now()} :: LorebookInfoView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
 
 class EntryInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIView):
     """For lorebook entry info class view"""

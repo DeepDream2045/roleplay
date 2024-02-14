@@ -17,11 +17,15 @@ urlpatterns = [
     path('forget_password/', views.ForgetPassword.as_view(), name='forget_password'),
     path('reset_password/', views.ResetPassword.as_view(), name='reset_password'),
 
-    path('change_profile_image/', views.ChangeProfilePictureView.as_view(), name='change_profile_image'),
-    path('email_confirmation/', views.EmailConfirmation.as_view(), name='email_confirmation'),
+    path('change_profile_image/', views.ChangeProfilePictureView.as_view(),
+         name='change_profile_image'),
+    path('email_confirmation/', views.EmailConfirmation.as_view(),
+         name='email_confirmation'),
 
-    path('login_request/', views.MagicLoginRequestView.as_view(), name='magic_login_request'),
-    path('login_verify/', views.MagicLoginVerifyView.as_view(), name='magic_login_verify'),
+    path('login_request/', views.MagicLoginRequestView.as_view(),
+         name='magic_login_request'),
+    path('login_verify/', views.MagicLoginVerifyView.as_view(),
+         name='magic_login_verify'),
 
     path('model_info/', views.ModelInfoAPIView.as_view(), name='model_info'),
 
@@ -29,15 +33,17 @@ urlpatterns = [
     path('public_tag_info/', views.TagListInfoView.as_view(), name='public_tag_info'),
 
     path('character_info/', views.CharacterInfoView.as_view(), name='character_info'),
-    path('character_info_by_id/', views.CharacterInfoByIDView.as_view(), name='character_info'),
-    path('public_character_info/', views.PublicCharacterInfoView.as_view(), name='public_character_info'),
+    path('character_info_by_id/',
+         views.CharacterInfoByIDView.as_view(), name='character_info'),
+    path('public_character_info/', views.PublicCharacterInfoView.as_view(),
+         name='public_character_info'),
 
     path('room_info/', views.RoomInfoChatView.as_view(), name='room_info'),
     path('chat_message/', views.ChatMessageView.as_view(), name='chat_message'),
     path('feedback/', views.FeedbackView.as_view(), name='feedback'),
     path('user_profile/', views.UserProfileView.as_view(), name='user_profile'),
-    
-    path('update-modal-configuration/', views.CustomUpdateByUser.as_view(), name='update_default_values'),
-    
-    
+
+    path('update-modal-configuration/',
+         views.CustomUpdateByUser.as_view(), name='update_default_values'),
+
 ]
