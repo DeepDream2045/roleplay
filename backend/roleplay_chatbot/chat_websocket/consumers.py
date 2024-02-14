@@ -62,6 +62,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             custom_character_attribute['Short_Bio'] = self.character.short_bio
             custom_character_attribute["Gender"] = self.character.character_gender
             custom_character_attribute['initial_message'] = self.character.initial_message
+            custom_character_attribute['character_story'] = self.character.character_story
             print(self.character.prompt)
             character_attribute_list = self.character.prompt.lower().strip().split(',\n')
             for i in character_attribute_list:
@@ -140,7 +141,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Receive message from room group and send to websocket"""
 
         try:
-            print("CHAT RECEIEVED")
+            print("CHAT RECEIVED")
             await self.send(text_data=json.dumps({
                 'message_id':event['message_id'],
                 'sender_user_message': event['sender_user_message'],

@@ -4,6 +4,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from shortuuidfield import ShortUUIDField
 import random
+import json
+
 
 class BaseModel(models.Model):
     """Base model for created and modified date."""
@@ -14,6 +16,7 @@ class BaseModel(models.Model):
     class Meta:
         """Meta class."""
         abstract = True
+
 
 class CustomUserManager(BaseUserManager):
     """Well.. using BaseUserManager."""
@@ -48,6 +51,7 @@ class CustomUserManager(BaseUserManager):
 
         return self._create_user(email, password, **extra_fields)
 
+
 class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     """Using email instead of username."""
 
@@ -57,10 +61,12 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     email = models.EmailField(max_length=255, unique=True)
     password = models.CharField(max_length=100, null=True, blank=True)
     phone = models.CharField(max_length=15, null=True, blank=True)
-    profile_image = models.ImageField(upload_to='profile/', default='', null=True, blank=True)
+    profile_image = models.ImageField(
+        upload_to='profile/', default='', null=True, blank=True)
     email_confirmation = models.BooleanField(default=False)
     stay_sign = models.BooleanField(default=False, null=True, blank=True)
-    provider = models.CharField(max_length=60, default='magic link', null=True, blank=True)
+    provider = models.CharField(
+        max_length=60, default='magic link', null=True, blank=True)
 
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -74,7 +80,7 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     def __str__(self):
         """Str method to return User Email name."""
         return '{}'.format(self.email)
-    
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         try:
@@ -87,6 +93,7 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
             print(e)
         super(CustomUser, self).save()
 
+
 class TokenRequest(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     token = models.CharField(max_length=100, unique=True)
@@ -95,6 +102,7 @@ class TokenRequest(models.Model):
 
     def __str__(self):
         return self.user.email
+
 
 class TimeStampedModel(models.Model):
     """TimeStampedModel model for created and modified date."""
@@ -106,13 +114,16 @@ class TimeStampedModel(models.Model):
         """Meta class."""
         abstract = True
 
+
 class Tag(TimeStampedModel):
     id = models.AutoField(primary_key=True)
     tag_name = models.CharField(max_length=50)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='tag')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='tag')
 
     def __str__(self):
         return self.tag_name
+
 
 class ModelInfo(TimeStampedModel):
     model_name = models.CharField(max_length=255)
@@ -128,13 +139,20 @@ class UserCustomModel(TimeStampedModel):
     custom_model_info = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='custom_model_info')
     is_default = models.BooleanField(default=True)
     prompt_template = models.TextField(default="")
-    temperature = models.FloatField(default=0.85, validators=[MinValueValidator(0), MaxValueValidator(2)])
-    repetition_penalty = models.FloatField(default=1.15, validators=[MinValueValidator(0.01), MaxValueValidator(2)])
-    top_p = models.FloatField(default=0.8, validators=[MinValueValidator(0.01), MaxValueValidator(0.99)])
-    top_k = models.IntegerField(default=50, validators=[MinValueValidator(-1), MaxValueValidator(100)])
+    temperature = models.FloatField(default=0.85, validators=[
+                                    MinValueValidator(0), MaxValueValidator(2)])
+    repetition_penalty = models.FloatField(
+        default=1.15, validators=[MinValueValidator(0.01), MaxValueValidator(2)])
+    top_p = models.FloatField(default=0.8, validators=[
+                              MinValueValidator(0.01), MaxValueValidator(0.99)])
+    top_k = models.IntegerField(default=50, validators=[
+                                MinValueValidator(-1), MaxValueValidator(100)])
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='model_infos')
 
     def __str__(self):
         return f"{self.id}"
+
 
 class CharacterInfo(models.Model):
 
@@ -149,21 +167,57 @@ class CharacterInfo(models.Model):
     short_bio = models.TextField(null=False, blank=False)
     character_gender = models.CharField(max_length=10, null=False, blank=False)
     # tags = models.CharField(max_length=100, null=False, blank=False)
-    tags = models.ManyToManyField("roleplay_manager.Tag", related_name='character_tag')
-    model_id = models.ForeignKey(ModelInfo, on_delete=models.CASCADE, related_name='character_model')
+    tags = models.ManyToManyField(
+        "roleplay_manager.Tag", related_name='character_tag')
+    model_id = models.ForeignKey(
+        ModelInfo, on_delete=models.CASCADE, related_name='character_model')
     prompt = models.TextField(null=False, blank=False)
-    character_visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)
+    character_story = models.TextField(null=False, blank=False)
+    character_visibility = models.CharField(
+        max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)
     initial_message = models.TextField(null=True, blank=True)
-    image = models.ImageField(upload_to='character/',null=True, blank=True)
+    image = models.ImageField(upload_to='character/', null=True, blank=True)
     NSFW = models.BooleanField(default=False)
     lorebook = models.TextField(null=True, blank=True)
-    language = models.CharField(max_length=50, default="ENGLISH", null=True, blank=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='character_infos')
+    language = models.CharField(
+        max_length=50, default="ENGLISH", null=True, blank=True)
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='character_infos')
     created_date = models.DateTimeField(auto_now_add=True, null=True)
     modified_date = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.character_name
+
+class Lorebook(TimeStampedModel):
+    name = models.CharField(max_length=200)
+    description = models.TextField(null=True, blank=True)
+    is_public = models.BooleanField(default=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='lorebook_infos')
+
+class LorebookEntries(TimeStampedModel):
+    name = models.CharField(max_length=200)
+    keys = models.TextField(null=True, blank=True)
+    condition = models.CharField(max_length=20)
+    secondary_keys = models.TextField(null=True, blank=True)
+    content = models.TextField(null=True, blank=True)
+    probability = models.IntegerField(default=100)
+    order = models.IntegerField(default=100)
+    is_enabled = models.BooleanField(default=True)
+    is_exclude_recursion = models.BooleanField(default=False)
+    lorebook = models.ForeignKey(Lorebook, on_delete=models.CASCADE, related_name='lorebook_entry_infos')
+
+    @property
+    def convert_keys_list(self):
+        self.keys = json.loads(str(self.keys))
+        return self.keys
+    
+    @property
+    def convert_secondary_keys_list(self):
+        self.keys = json.loads(str(self.keys))
+        self.secondary_keys = json.loads(str(self.secondary_keys))
+        return self.secondary_keys
+
 
 class ChatRoom(TimeStampedModel):
     DM_ROOM = 1
@@ -176,8 +230,10 @@ class ChatRoom(TimeStampedModel):
     room_id = ShortUUIDField()
     type = models.PositiveIntegerField(choices=ROOM_TYPE, default=DM_ROOM)
     group_name = models.CharField(max_length=30, null=True, blank=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sender')
-    character = models.ForeignKey(CharacterInfo, on_delete=models.CASCADE, related_name='character')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='sender')
+    character = models.ForeignKey(
+        CharacterInfo, on_delete=models.CASCADE, related_name='character')
     # member = models.ManyToManyField('users.CustomUser', related_name='room_members')
     # is_active = models.BooleanField(default=False)
 
@@ -192,10 +248,12 @@ class ChatRoom(TimeStampedModel):
             return self.character.character_name
         return self.group_name
 
+
 class ChatMessage(TimeStampedModel):
     """creating chat message table for store chat data"""
 
-    chat = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='chatroom')
+    chat = models.ForeignKey(
+        ChatRoom, on_delete=models.CASCADE, related_name='chatroom')
     user_message = models.TextField(null=True, blank=True)
     character_message = models.TextField(null=True, blank=True)
     is_edited = models.BooleanField(default=False)
@@ -203,8 +261,10 @@ class ChatMessage(TimeStampedModel):
     def __str__(self):
         return self.chat.user.email
 
+
 class Feedback(TimeStampedModel):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='feedback')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='feedback')
     types = models.CharField(max_length=255)
     content = models.TextField()
 

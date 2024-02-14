@@ -27,7 +27,7 @@ def load_llama2_model():
         DEVICE_TYPE = "cpu"
 
     # Load model and pipeline
-    LLM = load_llm_model_langchain(model_id = MODEL_ID, device_type = DEVICE_TYPE, cache_dir = MODELS_PATH)
+    LLM = load_llm_model_langchain(model_id = MODEL_ID, device_type = DEVICE_TYPE, cache_dir = MODELS_PATH, set_manual_gpu=True)
     return LLM
 
 def start_model_llama2(custom_character_attribute):
@@ -48,7 +48,7 @@ def start_model_llama2(custom_character_attribute):
 if __name__ == "__main__":
     custom_character_attribute = {}
     custom_character_attribute['charName'] = "Elon Musk"
-    custom_character_attribute['initial_message'] = None
+    custom_character_attribute['initial_message'] = "Hello, I am Elon Musk"
     custom_character_attribute.update(elon_musk_attributes)
     print('Type exit for exiting conversation')
     conversation = start_model_llama2(custom_character_attribute)
