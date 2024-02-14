@@ -31,10 +31,10 @@ class TagAdmin(admin.ModelAdmin):
 class CharacterInfoAdmin(admin.ModelAdmin):
     """Create CharacterInfo admin for display on admin panel"""
 
-    list_display=['id','character_name', 'character_gender', 'display_tags']
-
+    list_display=['id','character_name', 'character_gender', 'display_tags', 'user']
+    
     def display_tags(self, obj):
-        return ", ".join([tag.tag_name for tag in Tag.objects.all()])
+        return ", ".join([tag.tag_name for tag in obj.tags.all()])
 
     display_tags.short_description = 'Tags'
 

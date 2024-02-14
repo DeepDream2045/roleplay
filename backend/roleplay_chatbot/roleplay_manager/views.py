@@ -17,15 +17,17 @@ from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from .utility import send_email, create_img_url
+import json
 
 logger = logging.getLogger(__name__)
 
-class Registraion(APIView):
+
+class Registration(APIView):
     """Registration class view"""
 
     def post(self, request):
         """Create user view """
-    
+
         password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
         if password != confirm_password:
@@ -37,41 +39,43 @@ class Registraion(APIView):
             if serializer.is_valid():
                 email = request.data['email']
                 if CustomUser.objects.filter(email=email.lower()):
-                    return Response({'error':"Email already used"})
+                    return Response({'error': "Email already used"})
                 user = serializer.save()
                 self.send_email_verification(serializer, user)
                 refresh = RefreshToken.for_user(user)
-                return Response({"message": 'success', 'data':serializer.data, 'refresh': str(refresh)
-                        , 'access': str(refresh.access_token)}, status=status.HTTP_200_OK)
+                return Response({"message": 'success', 'data': serializer.data, 'refresh': str(refresh), 'access': str(refresh.access_token)}, status=status.HTTP_200_OK)
 
             return Response({"message": "Field error", "data": serializer.errors},
-                        status=status.HTTP_400_BAD_REQUEST)
-                        
+                            status=status.HTTP_400_BAD_REQUEST)
+
         except Exception:
-            logger.info(f"{datetime.now()} :: Registraion post error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: Registration post error :: {error}")
             return Response({"message": "Field error data not valid", "data": serializer.errors},
-                        status=status.HTTP_400_BAD_REQUEST)
-    
+                            status=status.HTTP_400_BAD_REQUEST)
+
     def send_email_verification(self, serializer, user):
-            if not user.email_confirmation:
-                expiration_time= timezone.now() + timezone.timedelta(minutes=30) 
-                title = 'Email confirmation mail'
-                email = user.email
-                token = str(uuid.uuid4())
-                encoded_email = email.encode('utf_16', 'strict').hex() 
-                token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
-                urls = f"{settings.DASHBOARD_BASE_ROUTE}/email_confirmation/{token}/{encoded_email}/"
-                if token_create:
-                    body_html = render_to_string(
-                            'email_confirmation.html',
-                            {'name': user.full_name , 'token':token, 'email':email.encode('utf_16','strict'), 'url':urls}
-                        )
-                    body_html += ''
-                    result = send_email(title, body_html, [email])
-                    if result:
-                        return Response({'message':'We have sent you a link on email please verify', 'user':serializer.data,},status=status.HTTP_200_OK,)
-                return Response({'error':'Error while sending  email for email confirmation', 'user':serializer.data,},status=status.HTTP_200_OK,)
-            return Response({'message':'Email already verified!','user':serializer.data,},status=status.HTTP_200_OK)  
+        if not user.email_confirmation:
+            expiration_time = timezone.now() + timezone.timedelta(minutes=30)
+            title = 'Email confirmation mail'
+            email = user.email
+            token = str(uuid.uuid4())
+            encoded_email = email.encode('utf_16', 'strict').hex()
+            token_create = TokenRequest.objects.create(
+                user=user, token=token, expiration_time=expiration_time)
+            urls = f"{settings.DASHBOARD_BASE_ROUTE}/email_confirmation/{token}/{encoded_email}/"
+            if token_create:
+                body_html = render_to_string(
+                    'email_confirmation.html',
+                    {'name': user.full_name, 'token': token,
+                        'email': email.encode('utf_16', 'strict'), 'url': urls}
+                )
+                body_html += ''
+                result = send_email(title, body_html, [email])
+                if result:
+                    return Response({'message': 'We have sent you a link on email please verify', 'user': serializer.data, }, status=status.HTTP_200_OK,)
+            return Response({'error': 'Error while sending  email for email confirmation', 'user': serializer.data, }, status=status.HTTP_200_OK,)
+        return Response({'message': 'Email already verified!', 'user': serializer.data, }, status=status.HTTP_200_OK)
 
 
 class LoginView(APIView):
@@ -85,16 +89,19 @@ class LoginView(APIView):
             if serializer.is_valid():
                 email = serializer.validated_data['email']
                 password = serializer.validated_data['password']
-                user = auth.authenticate(request, email=email.lower(), password=password)
+                user = auth.authenticate(
+                    request, email=email.lower(), password=password)
                 if user is None:
                     return Response({'error': "Invalid credentials."})
                 if user.is_active:
                     profile_image = ''
                     try:
                         if user.profile_image.url:
-                            profile_image = create_img_url(request, user.profile_image.url)
+                            profile_image = create_img_url(
+                                request, user.profile_image.url)
                     except ValueError:
-                            profile_image = create_img_url(request, user.profile_image)
+                        profile_image = create_img_url(
+                            request, user.profile_image)
                     refresh = RefreshToken.for_user(user)
                     response_data = {}
                     response_data['id'] = user.id
@@ -105,15 +112,14 @@ class LoginView(APIView):
                     # response_data['refresh'] = str(refresh)
                     # response_data['access'] = str(refresh.access_token)
                     return Response({'message': 'success', 'data': response_data,
-                            'refresh': str(refresh), 'access': str(refresh.access_token)}
-                            , status=status.HTTP_200_OK, )
-                return Response({'message': 'user not active', 'data': serializer.errors},status=status.HTTP_400_BAD_REQUEST)
-                
+                                     'refresh': str(refresh), 'access': str(refresh.access_token)}, status=status.HTTP_200_OK, )
+                return Response({'message': 'user not active', 'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception:
             logger.info(f"{datetime.now()} :: LoginView post error :: {error}")
-            return Response({"error": "Invalid Email or password"},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid Email or password"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LogoutView(generics.GenericAPIView):
@@ -125,53 +131,55 @@ class LogoutView(generics.GenericAPIView):
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'errors': serializer.errors},status=status.HTTP_204_NO_CONTENT)
+        return Response({'errors': serializer.errors}, status=status.HTTP_204_NO_CONTENT)
 
 
 class ForgetPassword(APIView):
     """Forgot password class view"""
 
     def get(self, request, *args, **kwargs):
-
         """Get view """
         serializer = ForgotPasswordSerializer()
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         """post view"""
-        expiration_time= timezone.now() + timezone.timedelta(minutes=5)
+        expiration_time = timezone.now() + timezone.timedelta(minutes=5)
         try:
-            user = CustomUser.objects.filter(email=request.data['email']).first()
+            user = CustomUser.objects.filter(
+                email=request.data['email']).first()
             if user is not None:
                 title = 'Forget Password'
                 email = user.email
                 token = str(uuid.uuid4())
-                token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
+                token_create = TokenRequest.objects.create(
+                    user=user, token=token, expiration_time=expiration_time)
                 urls = f"{settings.DASHBOARD_BASE_ROUTE}/reset_password/{token}/"
                 if token_create:
                     body_html = render_to_string(
-                            'forgot_password.html',
-                            {'name': user.full_name , 'token':token, 'url':urls}
-                        )
+                        'forgot_password.html',
+                        {'name': user.full_name, 'token': token, 'url': urls}
+                    )
                     body_html += ''
                     result = send_email(title, body_html, [email])
-                    return Response({'message':'success'},status=status.HTTP_200_OK,)
+                    return Response({'message': 'success'}, status=status.HTTP_200_OK,)
 
-            return Response({'error':'Email does not exists!'},status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Email does not exists!'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: ForgetPassword post error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: ForgetPassword post error :: {error}")
             msg = "Error while sending  email for forgot password"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
-            
+
 class ResetPassword(APIView):
     """Reset password class view"""
 
     def get(self, request, *args, **kwargs):
-    
+
         password_reset = TokenRequest.objects.get(token=request.GET['token'])
         if password_reset.expiration_time < timezone.now():
-                return Response({'error':'password_reset_expired'})
+            return Response({'error': 'password_reset_expired'})
         else:
             return Response({"message": 'success'})
 
@@ -179,24 +187,25 @@ class ResetPassword(APIView):
         """ reset password post view"""
 
         password_reset = TokenRequest.objects.get(token=request.data['token'])
-        serializer = ResetPasswordSerializer(data = request.data)
+        serializer = ResetPasswordSerializer(data=request.data)
         try:
             if password_reset.expiration_time < timezone.now():
-                return Response({'error':'password_reset_expired'})
+                return Response({'error': 'password_reset_expired'})
             if serializer.is_valid():
                 email = serializer.data.get('email')
                 new_password = serializer.data.get('new_password')
                 if email:
                     user = CustomUser.objects.filter(email=email).first()
                     if user is None:
-                        return Response({'error':'Email does not exists'})
+                        return Response({'error': 'Email does not exists'})
                     user.password = make_password(new_password)
                     user.save()
-                    return Response({'message':'Password successfully updated' },status=status.HTTP_200_OK,)
-                return Response({'error':'user does not exists'},status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'message': 'Password successfully updated'}, status=status.HTTP_200_OK,)
+                return Response({'error': 'user does not exists'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-                logger.info(f"{datetime.now()} :: ResetPassword post error :: {error}")
-                return Response({'error':'something went wrong'},status=status.HTTP_400_BAD_REQUEST)
+            logger.info(
+                f"{datetime.now()} :: ResetPassword post error :: {error}")
+            return Response({'error': 'something went wrong'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChangeProfilePictureView(APIView):
@@ -208,23 +217,26 @@ class ChangeProfilePictureView(APIView):
         try:
             user_obj = CustomUser.objects.get(email=request.user)
             if user_obj:
-                user_obj.profile_image = request.data['profile_image'] 
+                user_obj.profile_image = request.data['profile_image']
                 user_obj.save()
-                profile_image =''
+                profile_image = ''
                 try:
                     if user_obj.profile_image.url:
-                       profile_image = create_img_url(request, user_obj.profile_image.url)
-                       return Response({"message": "Profile changed successfully!", 'profile_image':profile_image})
+                        profile_image = create_img_url(
+                            request, user_obj.profile_image.url)
+                        return Response({"message": "Profile changed successfully!", 'profile_image': profile_image})
                 except ValueError:
-                    profile_image = create_img_url(request, user_obj.profile_image)
-                    return Response({"message": "Profile changed successfully!", 'profile_image':profile_image})
+                    profile_image = create_img_url(
+                        request, user_obj.profile_image)
+                    return Response({"message": "Profile changed successfully!", 'profile_image': profile_image})
             return Response({"error": "User  does not exists!"})
 
         except CustomUser.DoesNotExist:
-            return Response({"error":"User  does not exists!"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "User  does not exists!"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: ChangeProfilePictureView post error :: {error}")
-            return Response({"error":"User  does not exists!", 'err': error.__str__()}, status=status.HTTP_400_BAD_REQUEST)
+            logger.info(
+                f"{datetime.now()} :: ChangeProfilePictureView post error :: {error}")
+            return Response({"error": "User  does not exists!", 'err': error.__str__()}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmailConfirmation(APIView):
@@ -232,25 +244,27 @@ class EmailConfirmation(APIView):
 
     def post(self, request):
         """Email verification view"""
-        
+
         try:
-            email_confirm = TokenRequest.objects.get(token=request.data['token'])
+            email_confirm = TokenRequest.objects.get(
+                token=request.data['token'])
             if email_confirm.expiration_time < timezone.now():
-                return Response({'error':'eamil_confirmation_link_expired'})
+                return Response({'error': 'email_confirmation_link_expired'})
             email_bytes = bytes.fromhex(request.data['email'])
             decoded_email = email_bytes.decode('utf-16', 'strict')
             user = CustomUser.objects.get(email=decoded_email)
-            if not user.email_confirmation :
+            if not user.email_confirmation:
                 user.email_confirmation = True
                 user.save()
-                return Response({'message':'Email is verified'},status=status.HTTP_200_OK)
-            return Response({'error': "Email already verified!"},status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message': 'Email is verified'}, status=status.HTTP_200_OK)
+            return Response({'error': "Email already verified!"}, status=status.HTTP_400_BAD_REQUEST)
 
         except TokenRequest.DoesNotExist:
-            return Response({'error':'token does not exists!'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'token does not exists!'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: EmailConfirmation post error :: {e}")
-            return Response({'error': "Email does not exists!", 'error_msg': e.__repr__()},status=status.HTTP_400_BAD_REQUEST)
+            logger.info(
+                f"{datetime.now()} :: EmailConfirmation post error :: {e}")
+            return Response({'error': "Email does not exists!", 'error_msg': e.__repr__()}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MagicLoginRequestView(APIView):
@@ -260,30 +274,33 @@ class MagicLoginRequestView(APIView):
         """Implement logic to send the magic login link to the user's email
         This could involve generating a unique token and sending it in an email"""
 
-        expiration_time= timezone.now() + timezone.timedelta(minutes=10)
+        expiration_time = timezone.now() + timezone.timedelta(minutes=10)
         try:
-            user = CustomUser.objects.filter(email=request.data['email']).first()
+            user = CustomUser.objects.filter(
+                email=request.data['email']).first()
             if not user:
-                email= request.data['email'].lower()
+                email = request.data['email'].lower()
                 user = CustomUser.objects.create(email=email)
 
             if user is not None:
                 title = 'Sign into Roleplay'
                 email = user.email
                 token = str(uuid.uuid4())
-                token_create=TokenRequest.objects.create(user=user, token=token, expiration_time=expiration_time)
+                token_create = TokenRequest.objects.create(
+                    user=user, token=token, expiration_time=expiration_time)
                 urls = f"{settings.DASHBOARD_BASE_ROUTE}/login_verify/{token}/"
                 if token_create:
                     body_html = render_to_string(
-                            'login_mail.html', {'url':urls}
-                        )
+                        'login_mail.html', {'url': urls}
+                    )
                     body_html += ''
                     result = send_email(title, body_html, [email])
-                    return Response({'message':'success'},status=status.HTTP_200_OK,)
+                    return Response({'message': 'success'}, status=status.HTTP_200_OK,)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: MagicLoginRequestView post error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: MagicLoginRequestView post error :: {error}")
             msg = "Error while sending email for Login"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MagicLoginVerifyView(APIView):
@@ -297,11 +314,11 @@ class MagicLoginVerifyView(APIView):
 
         try:
             if token.expiration_time < timezone.now():
-                return Response({'error':'token expired'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'token expired'}, status=status.HTTP_400_BAD_REQUEST)
             if serializer.is_valid():
                 user = CustomUser.objects.filter(id=token.user.id).first()
                 if user is None:
-                    return Response({'error':'token expired'},status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'error': 'token expired'}, status=status.HTTP_400_BAD_REQUEST)
                 if not user.email_confirmation:
                     user.email_confirmation = True
                     user.is_active = True
@@ -310,9 +327,10 @@ class MagicLoginVerifyView(APIView):
                 profile_image = ''
                 try:
                     if user.profile_image.url:
-                        profile_image = create_img_url(request, user.profile_image.url)
+                        profile_image = create_img_url(
+                            request, user.profile_image.url)
                 except ValueError:
-                        profile_image = create_img_url(request, user.profile_image)
+                    profile_image = create_img_url(request, user.profile_image)
                 refresh = RefreshToken.for_user(user)
                 response_data = {}
                 response_data['id'] = user.id
@@ -322,12 +340,12 @@ class MagicLoginVerifyView(APIView):
                 response_data['profile_image'] = profile_image
                 response_data['stay_sign'] = user.stay_sign
                 return Response({'message': 'success', 'data': response_data,
-                        'refresh': str(refresh), 'access': str(refresh.access_token)}
-                        , status=status.HTTP_200_OK, )
-            return Response({'error':'Email required'},status=status.HTTP_400_BAD_REQUEST)
+                                 'refresh': str(refresh), 'access': str(refresh.access_token)}, status=status.HTTP_200_OK, )
+            return Response({'error': 'Email required'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: MagicLoginVerifyView post error :: {error}")
-            return Response({'error':'something went wrong'},status=status.HTTP_400_BAD_REQUEST)
+            logger.info(
+                f"{datetime.now()} :: MagicLoginVerifyView post error :: {error}")
+            return Response({'error': 'something went wrong'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
@@ -356,9 +374,10 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: ModelInfoAPIView list error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: ModelInfoAPIView list error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     def update(self, request, *args, **kwargs):
         """ 
         Update Model information
@@ -376,9 +395,10 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
         except ModelInfo.DoesNotExist:
             return Response({'error': 'LLM Model info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: ModelInfoAPIView update error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: ModelInfoAPIView update error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     def delete(self, request, *args, **kwargs):
         """ 
         delete Model information
@@ -393,7 +413,8 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
         except ModelInfo.DoesNotExist:
             return Response({'error': 'LLM Model info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: ModelInfoAPIView delete error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: ModelInfoAPIView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -404,11 +425,13 @@ class PublicCharacterInfoView(APIView):
         """ For fetch the all public character info """
 
         try:
-            queryset = CharacterInfo.objects.filter(character_visibility="public")
+            queryset = CharacterInfo.objects.filter(
+                character_visibility="public")
             serializer = PublicCharacterInfoSerializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: PublicCharacterInfoView get error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: PublicCharacterInfoView get error :: {error}")
             return Response({'error': str(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -443,9 +466,10 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                 return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: CharacterInfoView create error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: CharacterInfoView create error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     def list(self, request, *args, **kwargs):
         """ 
         Fetch Character information with the visibility = public
@@ -453,10 +477,12 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         try:
             if request.user.is_authenticated:
                 queryset = CharacterInfo.objects.filter(user=request.user)
-                serializer = UserCreatedCharacterInfoSerializer(queryset, many=True)
+                serializer = UserCreatedCharacterInfoSerializer(
+                    queryset, many=True)
                 return Response(serializer.data)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: CharacterInfoView list error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: CharacterInfoView list error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def update(self, request, *args, **kwargs):
@@ -466,6 +492,7 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         """
 
         try:
+            tag_list = None
             id = request.data.get('id', None)
             character_info = CharacterInfo.objects.get(id=id)
             request_data = request.data.copy()
@@ -474,7 +501,7 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                 tag_list = json.loads(str(tag_list))
             serializer = self.get_serializer(character_info, data=request_data)
             if serializer.is_valid():
-                if 'tags' in request_data.keys():
+                if tag_list:
                     for tag_obj in tag_list:
                         tag = Tag.objects.get(id=tag_obj)
                         serializer.validated_data['tags'].append(tag)
@@ -484,7 +511,8 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         except CharacterInfo.DoesNotExist:
             return Response({'error': 'character info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: CharacterInfoView update error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: CharacterInfoView update error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, *args, **kwargs):
@@ -501,7 +529,8 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         except CharacterInfo.DoesNotExist:
             return Response({'error': 'character info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: CharacterInfoView delete error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: CharacterInfoView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -593,32 +622,36 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
     def create(self, request, *args, **kwargs):
         try:
             character = CharacterInfo.objects.get(id=request.data['character'])
-            chat = ChatRoom.objects.create(user = request.user, character = character)
+            chat = ChatRoom.objects.create(
+                user=request.user, character=character)
             if chat.group_name is None:
                 chat.group_name = chat.get_group_name
                 chat.save()
             if chat.character.initial_message is not None:
-                chat_mag = ChatMessage.objects.create(chat=chat, character_message=chat.character.initial_message)
+                chat_mag = ChatMessage.objects.create(
+                    chat=chat, character_message=chat.character.initial_message)
                 chat_mag.save()
             serializer = self.get_serializer(chat)
             return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: RoomInfoChatView create error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: RoomInfoChatView create error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def list(self, request, *args, **kwargs):
         try:
             if request.user.is_authenticated:
-                queryset = ChatRoom.objects.filter(user = request.user)
+                queryset = ChatRoom.objects.filter(user=request.user)
                 serializer = self.get_serializer(queryset, many=True)
                 return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
 
             msg = "User information not found"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: RoomInfoChatView list error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: RoomInfoChatView list error :: {error}")
             msg = "Please provide valid user information"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         """ 
@@ -628,7 +661,7 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
         try:
             room_id = request.data.get('room_id', None)
-            queryset = ChatRoom.objects.get(room_id = room_id)
+            queryset = ChatRoom.objects.get(room_id=room_id)
             serializer = self.get_serializer(queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -638,7 +671,8 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
         except ChatRoom.DoesNotExist:
             return Response({'error': 'Room info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: RoomInfoChatView upadte error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: RoomInfoChatView updated error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, *args, **kwargs):
@@ -649,14 +683,15 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
         try:
             room_id = request.data.get('room_id', None)
-            queryset = ChatRoom.objects.get(room_id = room_id)
+            queryset = ChatRoom.objects.get(room_id=room_id)
             queryset.delete()
             return Response({'message': 'Room info deleted successfully'})
 
         except ChatRoom.DoesNotExist:
             return Response({'error': 'Room info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: RoomInfoChatView delete error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: RoomInfoChatView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -666,7 +701,7 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = ChatMessageSerializer
     queryset = ChatMessage.objects.all()
-    
+
     def post(self, request, *args, **kwargs):
         """ 
         Fetch room information
@@ -677,14 +712,15 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
             chat = ChatRoom.objects.filter(room_id=request.data['room_id'])
             if chat.exists():
                 chat = chat.first()
-                queryset = ChatMessage.objects.filter(chat = chat)
+                queryset = ChatMessage.objects.filter(chat=chat)
                 serializer = self.get_serializer(queryset, many=True)
-                
+
                 return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: ChatMessageView list error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: ChatMessageView list error :: {error}")
             msg = "Please provide valid room id"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         """ 
@@ -694,7 +730,7 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
 
         try:
             message_id = request.data.get('message_id', None)
-            queryset = ChatMessage.objects.get(id = message_id)
+            queryset = ChatMessage.objects.get(id=message_id)
             serializer = self.get_serializer(queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -704,7 +740,8 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
         except ChatMessage.DoesNotExist:
             return Response({'error': 'Chat Message not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: ChatMessageView update error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: ChatMessageView update error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, *args, **kwargs):
@@ -715,14 +752,15 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
 
         try:
             message_id = request.data.get('message_id', None)
-            queryset = ChatMessage.objects.get(id = message_id)
+            queryset = ChatMessage.objects.get(id=message_id)
             queryset.delete()
             return Response({'message': 'Chat Message deleted successfully'})
 
         except ChatMessage.DoesNotExist:
             return Response({'error': 'Chat Message not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: ChatMessageView delete error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: ChatMessageView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -739,19 +777,21 @@ class CallLLMView(APIView):
             user = CustomUser.objects.filter(id=request.data['user_id'])
             if user.exists():
                 self.user = user.first()
-                self.character = CharacterInfo.objects.filter(id=request.data['character_id']).first()
-                self.chat, created = ChatRoom.objects.get_or_create(user = self.user, character = self.character)
+                self.character = CharacterInfo.objects.filter(
+                    id=request.data['character_id']).first()
+                self.chat, created = ChatRoom.objects.get_or_create(
+                    user=self.user, character=self.character)
                 if self.chat.group_name is None:
                     self.chat.group_name = self.chat.get_group_name
                     self.chat.save()
                 character_attribute = self.set_character_info()
             self.conversation = start_model_llama2(character_attribute)
             self.response_LLM(user_msg)
-            return Response({'message':'success'},status=status.HTTP_200_OK,)
+            return Response({'message': 'success'}, status=status.HTTP_200_OK,)
         except Exception as error:
             print(error)
             msg = "Please provide valid user and character information"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
     def set_character_info(self):
         custom_character_attribute = {}
@@ -764,7 +804,7 @@ class CallLLMView(APIView):
             custom_character_attribute[i.split(":")[0]] = i.split(":")[1]
         print(custom_character_attribute)
         return custom_character_attribute
-    
+
     def response_LLM(self, sender_user_message):
 
         response_instance = self.create_msg(self.chat, sender_user_message)
@@ -778,27 +818,28 @@ class CallLLMView(APIView):
         self.character_profile_pic = self.character.image.url if self.character.image else None
 
         response_data = {
-                'type': 'chat_message',
-                'message_id':response_instance.id,
-                'group_name':self.chat.get_group_name,
-                'sender_user_message': sender_user_message,
-                'character_message': character_message,
+            'type': 'chat_message',
+            'message_id': response_instance.id,
+            'group_name': self.chat.get_group_name,
+            'sender_user_message': sender_user_message,
+            'character_message': character_message,
 
-                'sender_user_id': self.user.id,
-                'sender_email': self.user.email,
-                'sender_profile_pic': self.sender_profile_pic,
+            'sender_user_id': self.user.id,
+            'sender_email': self.user.email,
+            'sender_profile_pic': self.sender_profile_pic,
 
-                'character_id': self.character.id,
-                'character_name': self.character.character_name,
-                'character_profile_pic': self.character_profile_pic,
-            }
+            'character_id': self.character.id,
+            'character_name': self.character.character_name,
+            'character_profile_pic': self.character_profile_pic,
+        }
         return response_data
 
     def create_msg(self, chatroom, user_msg):
         """Storing user chat data into database"""
         try:
             if user_msg is not None:
-                chat_mag = ChatMessage.objects.create(chat=chatroom, user_message=user_msg)
+                chat_mag = ChatMessage.objects.create(
+                    chat=chatroom, user_message=user_msg)
                 chat_mag.save()
                 print('created', chat_mag.id)
                 return chat_mag
@@ -812,7 +853,6 @@ class FeedbackView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = FeedbackSerializer
     # queryset = Feedback.objects.all()
-
 
     def get_serializer_context(self):
         """
@@ -828,15 +868,16 @@ class FeedbackView(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         try:
             if request.user.is_authenticated:
-                queryset = Feedback.objects.filter(user = request.user)
+                queryset = Feedback.objects.filter(user=request.user)
                 serializer = self.get_serializer(queryset, many=True)
                 return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
             msg = "User information not found"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: FeedbackView list error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: FeedbackView list error :: {error}")
             msg = "Please provide valid user information"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserProfileView(generics.ListAPIView, generics.RetrieveUpdateAPIView):
@@ -844,20 +885,21 @@ class UserProfileView(generics.ListAPIView, generics.RetrieveUpdateAPIView):
 
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = UserProfileInfoSerializer
-    
+
     def list(self, request, *args, **kwargs):
         try:
             if request.user.is_authenticated:
-                queryset = CustomUser.objects.filter(id = request.user.id)
+                queryset = CustomUser.objects.filter(id=request.user.id)
                 serializer = self.get_serializer(queryset, many=True)
                 return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
 
             msg = "User information not found"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
-            logger.info(f"{datetime.now()} :: UserProfileView list error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: UserProfileView list error :: {error}")
             msg = "Please provide valid user information"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         """ 
@@ -866,19 +908,21 @@ class UserProfileView(generics.ListAPIView, generics.RetrieveUpdateAPIView):
 
         try:
             if request.user.is_authenticated:
-                queryset = CustomUser.objects.get(id = request.user.id)
-                serializer = self.get_serializer(instance = queryset, data=request.data)
+                queryset = CustomUser.objects.get(id=request.user.id)
+                serializer = self.get_serializer(
+                    instance=queryset, data=request.data)
                 if serializer.is_valid():
                     serializer.save()
                     return Response({'message': 'User Profile updated successfully'})
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+
             msg = "User information not found"
-            return Response({"error": msg},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
         except CustomUser.DoesNotExist:
             return Response({'error': 'User Profile not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: UserProfileView update error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: UserProfileView update error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -886,20 +930,147 @@ class CharacterInfoByIDView(APIView):
     """Get Character Info by id View"""
 
     permission_classes = [IsAuthenticated, IsValidUser]
-    
+
     def post(self, request, *args, **kwargs):
         """ 
         Fetch Character information with character id
         """
         try:
             if request.user.is_authenticated:
-                queryset = CharacterInfo.objects.filter(id=request.data['character_id'])
-                serializer = UserCreatedCharacterInfoSerializer(queryset, many=True)
+                queryset = CharacterInfo.objects.filter(
+                    id=request.data['character_id'])
+                serializer = UserCreatedCharacterInfoSerializer(
+                    queryset, many=True)
                 return Response(serializer.data)
         except CharacterInfo.DoesNotExist:
             return Response({'error': 'Character Info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.info(f"{datetime.now()} :: CharacterInfoByIDView post error :: {e}")
+            logger.info(
+                f"{datetime.now()} :: CharacterInfoByIDView post error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class LorebookInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIView):
+    """For lorebook Info class view"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = LorebookInfoSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            if request.user.is_authenticated:
+                queryset = Lorebook.objects.filter(user=request.user)
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+
+            msg = "User information not found"
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            logger.info(
+                f"{datetime.now()} :: LorebookInfoView list error :: {error}")
+            msg = "Please provide valid user information"
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """ 
+        update lorebook information
+        request body : id
+        """
+
+        try:
+            id = request.data.get('id', None)
+            queryset = Lorebook.objects.get(id=id)
+            serializer = self.get_serializer(queryset, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Lorebook info updated successfully'})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Lorebook.DoesNotExist:
+            return Response({'error': 'Lorebook info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: LorebookInfoView updated error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        """ 
+        delete lorebook information
+        request body : id
+        """
+
+        try:
+            id = request.data.get('id', None)
+            queryset = Lorebook.objects.get(id=id)
+            queryset.delete()
+            return Response({'message': 'Lorebook info deleted successfully'})
+
+        except Lorebook.DoesNotExist:
+            return Response({'error': 'Lorebook info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: LorebookInfoView delete error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class EntryInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIView):
+    """For lorebook entry info class view"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = EntryInfoSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            if request.user.is_authenticated:
+                queryset = LorebookEntries.objects.filter(user=request.user)
+                serializer = self.get_serializer(queryset, many=True)
+                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+
+            msg = "User information not found"
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            logger.info(
+                f"{datetime.now()} :: LorebookInfoView list error :: {error}")
+            msg = "Please provide valid user information"
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """ 
+        update lorebook information
+        request body : id
+        """
+
+        try:
+            id = request.data.get('id', None)
+            queryset = LorebookEntries.objects.get(id=id)
+            serializer = self.get_serializer(queryset, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Lorebook Entry info updated successfully'})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except LorebookEntries.DoesNotExist:
+            return Response({'error': 'Lorebook Entry info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: LorebookInfoView updated error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        """ 
+        delete lorebook information
+        request body : id
+        """
+
+        try:
+            id = request.data.get('id', None)
+            queryset = Lorebook.objects.get(id=id)
+            queryset.delete()
+            return Response({'message': 'Lorebook info deleted successfully'})
+
+        except Lorebook.DoesNotExist:
+            return Response({'error': 'Lorebook info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: LorebookInfoView delete error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
