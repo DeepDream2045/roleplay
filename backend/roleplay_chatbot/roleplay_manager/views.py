@@ -393,19 +393,19 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
                 model_info, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
-
                 custom_model_instance = model_info.custom_model_info.first()
-                custom_serializer = CustomizedModelValuesSerializer(
-                    custom_model_instance, data=request.data.get('custom_model_info', {}), partial=True)
-                if custom_serializer.is_valid():
-                    custom_serializer.save(partial=True)
-                    return Response({'message': 'LLM Model info update successfully'})
-
+                # Check if custom_model_info is provided in the request
+                custom_model_info_data = request.data.get(
+                    'custom_model_info', {})
+                if custom_model_info_data:
+                    custom_serializer = CustomizedModelValuesSerializer(
+                        custom_model_instance, data=custom_model_info_data, partial=True)
+                    if custom_serializer.is_valid():
+                        custom_serializer.save(partial=True)
+                return Response({'message': 'LLM Model info update successfully'})
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         except ModelInfo.DoesNotExist:
             return Response({'error': 'LLM Model info not found'}, status=status.HTTP_404_NOT_FOUND)
-
         except Exception as e:
             logger.info(
                 f"{datetime.now()} :: ModelInfoAPIView update error :: {e}")
@@ -430,6 +430,32 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class ModelInfoByIDView(APIView):
+    """Get Modal Info by id View"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+
+    def post(self, request, *args, **kwargs):
+        """ 
+        Fetch modal information with model id
+        """
+        try:
+            if request.user.is_authenticated:
+                queryset = ModelInfo.objects.filter(
+                    id=request.data['id'])
+                serializer = ModelInfoSerializer(
+                    queryset, many=True)
+                if not queryset.exists():
+                    return Response({'message': 'No modal found with this id'})
+                return Response(serializer.data)
+        except ModelInfo.DoesNotExist:
+            return Response({'error': 'Modal Info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: ModelInfoByIDView post error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
     """ 
         CustomUpdateByUser for updating customized values
@@ -440,14 +466,12 @@ class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         model_id = self.request.data.get('id')
         user = self.request.user
-
         try:
             instance = UserCustomModel.objects.get(
                 user=user, custom_model_info_id=model_id)
         except UserCustomModel.DoesNotExist:
             instance = UserCustomModel.objects.create(
                 user=user, custom_model_info_id=model_id)
-
         return instance
 
     def get_serializer_context(self):
@@ -461,26 +485,42 @@ class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
         return context
 
     def get(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: CustomUpdateByUser get error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(
-            instance, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: CustomUpdateByUser update error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            instance.delete()
+            print("request.user.is_developer", request.user.is_developer)
+            if not request.user.is_developer:
+                instance.delete()
+            else:
+                return Response({'message': 'You are a developer. Use ModelInfo api to delete the modal.'}, status=status.HTTP_400_BAD_REQUEST)
             return Response({'message': ' Model customized info deleted successfully'})
         except UserCustomModel.DoesNotExist:
+            logger.info(
+                f"{datetime.now()} :: CustomUpdateByUser update error :: {e}")
             return Response({'error': 'details not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
@@ -588,7 +628,6 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         delete Character information
         request body : Character id 
         """
-
         try:
             id = request.data.get('id', None)
             character_info = CharacterInfo.objects.get(id=id)
@@ -667,7 +706,6 @@ class TagInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIV
         delete Tag information
         request body : id
         """
-
         try:
             id = request.data.get('id', None)
             tag_info = Tag.objects.get(id=id)
@@ -1008,6 +1046,8 @@ class CharacterInfoByIDView(APIView):
                     id=request.data['character_id'])
                 serializer = UserCreatedCharacterInfoSerializer(
                     queryset, many=True)
+                if not queryset.exists():
+                    return Response({'message': 'No character found with this id'})
                 return Response(serializer.data)
         except CharacterInfo.DoesNotExist:
             return Response({'error': 'Character Info not found'}, status=status.HTTP_404_NOT_FOUND)

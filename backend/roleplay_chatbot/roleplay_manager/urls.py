@@ -28,6 +28,7 @@ urlpatterns = [
          name='magic_login_verify'),
 
     path('model_info/', views.ModelInfoAPIView.as_view(), name='model_info'),
+    path('modal-info-by-id/',views.ModelInfoByIDView.as_view(), name='modalInfoById'),
 
     path('tag_info/', views.TagInfoView.as_view(), name='tag_info'),
     path('public_tag_info/', views.TagListInfoView.as_view(), name='public_tag_info'),

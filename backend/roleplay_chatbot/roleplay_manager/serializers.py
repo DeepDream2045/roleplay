@@ -135,7 +135,6 @@ class ModelInfoSerializer(serializers.ModelSerializer):
         model = ModelInfo
         fields = '__all__'
         read_only_fields = ['user']
-        # extra_kwargs = {'user': {'required': False}}
 
     def validate(self, attrs):
         # Check if the model_name is unique
@@ -171,11 +170,11 @@ class ModelInfoSerializer(serializers.ModelSerializer):
         customized_values_representation = CustomizedModelValuesSerializer(
             instance.custom_model_info.first()).data
         representation['custom_model_info'] = customized_values_representation
-
         return representation
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
+    """Serializer for user information  """
 
     class Meta:
         model = CustomUser
@@ -183,6 +182,8 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
 
 class CharacterInfoSerializer(serializers.ModelSerializer):
+    """Serializer for create characters  """
+
     user = UserInfoSerializer(many=False, read_only=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True, required=False)
@@ -198,6 +199,8 @@ class CharacterInfoSerializer(serializers.ModelSerializer):
 
 
 class TagInfoSerializer(serializers.ModelSerializer):
+    """Serializer for Tags  """
+
     class Meta:
         model = Tag
         fields = '__all__'
@@ -249,28 +252,56 @@ class RoomInfoChatSerializer(serializers.ModelSerializer):
                   'user', 'character', 'chatroom')
 
 
-class CharacterModelInfoSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = ModelInfo
-        fields = [
-            'id', 'model_name', 'short_bio', 'model_location',
-            'prompt_template', 'temperature', 'repetition_penalty',
-            'top_p', 'top_k'
-        ]
-
-
 class CharacterTagInfoSerializer(serializers.ModelSerializer):
+    """Serializer for get character tags information"""
 
     class Meta:
         model = Tag
         fields = ['id', 'tag_name']
 
 
+class CharacterModelInfoSerializer(serializers.ModelSerializer):
+    """Serializer for get character modal information"""
+
+    class Meta:
+        model = ModelInfo
+        fields = ['id', 'model_name', 'short_bio', 'model_location']
+
+
+class UserCustomModelSerializer(serializers.ModelSerializer):
+    """Serializer for get character modal default information"""
+
+    class Meta:
+        model = UserCustomModel
+        fields = ['prompt_template', 'temperature',
+                  'repetition_penalty', 'top_p', 'top_k']
+
+
 class UserCreatedCharacterInfoSerializer(serializers.ModelSerializer):
+    """Serializer for get character information"""
     model_id = CharacterModelInfoSerializer(many=False, read_only=True)
     user = UserInfoSerializer(many=False, read_only=True)
     tags = CharacterTagInfoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CharacterInfo
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Fetch and include data for the related model with its ID
+        model_id_data = CharacterModelInfoSerializer(instance.model_id).data
+        user_data = UserInfoSerializer(instance.user).data
+        tags_data = CharacterTagInfoSerializer(
+            instance.tags.all(), many=True).data
+        custom_model = UserCustomModelSerializer(
+            instance.model_id.custom_model_info.first()).data
+        model_id_data.update(custom_model)
+        representation['model_id'] = model_id_data
+        representation['user'] = user_data
+        representation['tags'] = tags_data
+
+        return representation
 
     class Meta:
         model = CharacterInfo
