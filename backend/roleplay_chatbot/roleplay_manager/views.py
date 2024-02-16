@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from .serializers import *
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from roleplay_manager.permission import IsValidUser, isUserDeveloper
+from roleplay_manager.permission import IsValidUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import *
 from bot.pipeline import *
@@ -18,6 +18,9 @@ from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from .utility import send_email, create_img_url
 import json
+from django.db.models import Q
+from django.http import Http404
+
 
 logger = logging.getLogger(__name__)
 
@@ -350,7 +353,7 @@ class MagicLoginVerifyView(APIView):
 
 class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
 
-    permission_classes = [IsAuthenticated, IsValidUser, isUserDeveloper]
+    permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = ModelInfoSerializer
     queryset = ModelInfo.objects.all()
 
@@ -370,7 +373,9 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
         """
 
         try:
-            queryset = self.get_queryset()
+            # Filter queryset based on user and is_public
+            queryset = ModelInfo.objects.filter(
+                Q(user=request.user) | Q(is_public=True))
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as e:
@@ -386,7 +391,7 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
         try:
             id = request.data.get('id', None)
-            model_info = ModelInfo.objects.get(id=id)
+            model_info = ModelInfo.objects.get(id=id, user=request.user)
 
             # Update the ModelInfo instance
             serializer = self.get_serializer(
@@ -419,7 +424,7 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
         try:
             id = request.data.get('id', None)
-            model_info = ModelInfo.objects.get(id=id)
+            model_info = ModelInfo.objects.get(id=id, user=request.user)
             model_info.delete()
             return Response({'message': 'LLM Model info deleted successfully'})
         except ModelInfo.DoesNotExist:
@@ -441,8 +446,8 @@ class ModelInfoByIDView(APIView):
         """
         try:
             if request.user.is_authenticated:
-                queryset = ModelInfo.objects.filter(
-                    id=request.data['id'])
+                queryset = ModelInfo.objects.filter(Q(id=request.data['id'], user=request.user) | Q(
+                    id=request.data['id'], is_public=True))
                 serializer = ModelInfoSerializer(
                     queryset, many=True)
                 if not queryset.exists():
@@ -453,6 +458,26 @@ class ModelInfoByIDView(APIView):
         except Exception as e:
             logger.info(
                 f"{datetime.now()} :: ModelInfoByIDView post error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GetUserCreatedModals(generics.ListAPIView):
+    """Get Modal Info of requested user"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = ModelInfoSerializer
+
+    def list(self, request, *args, **kwargs):
+        """ 
+        Fetch Model information
+        """
+        try:
+            queryset = ModelInfo.objects.filter(user=request.user)
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: ModelInfoAPIView list error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -512,11 +537,7 @@ class CustomUpdateByUser(generics.RetrieveUpdateDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            print("request.user.is_developer", request.user.is_developer)
-            if not request.user.is_developer:
-                instance.delete()
-            else:
-                return Response({'message': 'You are a developer. Use ModelInfo api to delete the modal.'}, status=status.HTTP_400_BAD_REQUEST)
+            instance.delete()
             return Response({'message': ' Model customized info deleted successfully'})
         except UserCustomModel.DoesNotExist:
             logger.info(
@@ -563,14 +584,23 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             request_data = request.data.copy()
             tag_list = request_data.pop('tags')[0]
             tag_list = json.loads(str(tag_list))
+            model_id = request_data.get('model_id')
+            # Check if the user is the owner or the model is public
+            queryset = ModelInfo.objects.filter(id=model_id).filter(
+                Q(user=request.user) | Q(is_public=True))
+            if not queryset.exists():
+                raise Http404("This model is private, not accessible.")
             serializer = self.get_serializer(data=request_data)
             if serializer.is_valid():
                 for tag_obj in tag_list:
                     tag = Tag.objects.get(id=tag_obj)
                     serializer.validated_data['tags'].append(tag)
                 serializer.save()
-                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+                return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK)
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Http404 as e:
+            return Response({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             logger.info(
                 f"{datetime.now()} :: CharacterInfoView create error :: {e}")
@@ -596,13 +626,22 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
     def update(self, request, *args, **kwargs):
         """ 
         Update Character information
-        request body : Character id with other values need to update
+        request body: Character id with other values need to update
         """
 
         try:
             tag_list = None
             id = request.data.get('id', None)
-            character_info = CharacterInfo.objects.get(id=id)
+            character_info = CharacterInfo.objects.get(
+                id=id, user=request.user)
+            # Check if the user is the owner or the model is public
+            # Use _id for direct foreign key relationship
+            model_id = character_info.model_id_id
+            queryset = ModelInfo.objects.filter(id=model_id).filter(
+                Q(user=request.user) | Q(is_public=True))
+            if not queryset.exists():
+                raise Http404("This model is private, not accessible.")
+
             request_data = request.data.copy()
             if 'tags' in request_data.keys():
                 tag_list = request_data.pop('tags')[0]
@@ -614,10 +653,16 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                         tag = Tag.objects.get(id=tag_obj)
                         serializer.validated_data['tags'].append(tag)
                 serializer.save()
-                return Response({'message': 'character info update successfully'})
+                return Response({'message': 'character info updated successfully'})
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         except CharacterInfo.DoesNotExist:
             return Response({'error': 'character info not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        except Http404 as e:
+            return Response({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
+
         except Exception as e:
             logger.info(
                 f"{datetime.now()} :: CharacterInfoView update error :: {e}")

@@ -50,7 +50,7 @@ class CharacterInfoAdmin(admin.ModelAdmin):
 class ModelInfoAdmin(admin.ModelAdmin):
     """Create ModelInfo admin for display on admin panel"""
 
-    list_display = ['user', 'model_name', 'short_bio', 'model_location']
+    list_display = ['id', 'user', 'model_name', 'short_bio', 'model_location']
 
 
 class FeedbackAdmin(admin.ModelAdmin):

@@ -71,7 +71,6 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
-    is_developer = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -131,6 +130,7 @@ class ModelInfo(TimeStampedModel):
     model_location = models.CharField(max_length=255)
     user = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, related_name='model_infos')
+    is_public = models.BooleanField(default=True)
 
     def __str__(self):
         return self.model_name
