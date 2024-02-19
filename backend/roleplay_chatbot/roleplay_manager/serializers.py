@@ -4,7 +4,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import *
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
-
+from django.db.models import Q
 import json
 
 
@@ -191,10 +191,10 @@ class CharacterInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = CharacterInfo
         fields = '__all__'
-        # extra_kwargs = {'tags': {'required': False}}
 
     def validate(self, attrs):
-        attrs['user'] = self.context["user"]
+        user = self.context["user"]
+        attrs['user'] = user
         return attrs
 
 

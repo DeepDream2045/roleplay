@@ -473,6 +473,8 @@ class GetUserCreatedModals(generics.ListAPIView):
         """
         try:
             queryset = ModelInfo.objects.filter(user=request.user)
+            if not queryset.exists():
+                    return Response({'message': 'No modal found for this id'})
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as e:
@@ -561,6 +563,8 @@ class PublicCharacterInfoView(APIView):
                 f"{datetime.now()} :: PublicCharacterInfoView get error :: {error}")
             return Response({'error': str(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+from django.shortcuts import get_object_or_404
+
 
 class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     """Create Character Info View"""
@@ -582,14 +586,29 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
     def create(self, request, *args, **kwargs):
         try:
             request_data = request.data.copy()
+            if not request_data.get('tags'):
+                return Response({'error': {
+                                "tags": [
+                                    "This field is required."
+                                ]
+                            }}, status=status.HTTP_400_BAD_REQUEST)
+
             tag_list = request_data.pop('tags')[0]
             tag_list = json.loads(str(tag_list))
             model_id = request_data.get('model_id')
+            if not model_id:
+                return Response({'error': {
+                                "model_id": [
+                                    "This field is required."
+                                ]
+                            }}, status=status.HTTP_400_BAD_REQUEST)
+
             # Check if the user is the owner or the model is public
             queryset = ModelInfo.objects.filter(id=model_id).filter(
                 Q(user=request.user) | Q(is_public=True))
-            if not queryset.exists():
-                raise Http404("This model is private, not accessible.")
+            if model_id:
+                if not queryset.exists():
+                    raise Http404("This model is private, not accessible.")
             serializer = self.get_serializer(data=request_data)
             if serializer.is_valid():
                 for tag_obj in tag_list:
@@ -597,8 +616,9 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                     serializer.validated_data['tags'].append(tag)
                 serializer.save()
                 return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                errors = serializer.errors
+                return Response({'error': errors}, status=status.HTTP_400_BAD_REQUEST)
         except Http404 as e:
             return Response({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
@@ -634,7 +654,6 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             id = request.data.get('id', None)
             character_info = CharacterInfo.objects.get(
                 id=id, user=request.user)
-            # Check if the user is the owner or the model is public
             # Use _id for direct foreign key relationship
             model_id = character_info.model_id_id
             queryset = ModelInfo.objects.filter(id=model_id).filter(
@@ -643,9 +662,45 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                 raise Http404("This model is private, not accessible.")
 
             request_data = request.data.copy()
-            if 'tags' in request_data.keys():
+            # Check if 'tags' is provided and not empty
+            if 'tags' in request_data:
                 tag_list = request_data.pop('tags')[0]
+                if not tag_list:
+                    return Response({'error': {
+                        "tags": [
+                            "This field cannot be blank during update."
+                        ]
+                    }}, status=status.HTTP_400_BAD_REQUEST)
+                # tag_list = request_data.pop('tags')[0]
                 tag_list = json.loads(str(tag_list))
+                
+                # Check if tags are provided but blank
+                if not tag_list:
+                    return Response({'error': {
+                        "tags": [
+                            "This field cannot be blank during update."
+                        ]
+                    }}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if 'model_id' is provided and not empty
+            if 'model_id' in request_data:
+                model_id = request_data.get('model_id')
+                if not model_id:
+                    return Response({'error': {
+                        "model_id": [
+                            "This field is required."
+                        ]
+                    }}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Check if the user is the owner or the model is public
+                queryset = ModelInfo.objects.filter(id=model_id).filter(
+                    Q(user=request.user) | Q(is_public=True))
+                if not queryset.exists():
+                    raise Http404("This model is private, not accessible.")
+            else:
+                # If 'model_id' is not provided, retain the existing value
+                request_data['model_id'] = model_id
+
             serializer = self.get_serializer(character_info, data=request_data)
             if serializer.is_valid():
                 if tag_list:
