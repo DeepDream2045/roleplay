@@ -51,6 +51,21 @@ class CustomUserManager(BaseUserManager):
 
         return self._create_user(email, password, **extra_fields)
 
+    def create_guest_user(self):
+        guest_username = f"guest_{random.randint(1000000, 9999999)}"
+        guest_email = f"{guest_username}@mail.com"
+
+        guest_user = self.model(
+            username=guest_username,
+            email=guest_email,
+            password="Download@1",  # You can choose to set a default password for guest users
+            is_active=True,
+            is_guest=True,
+        )
+
+        guest_user.save(using=self._db)
+        return guest_user
+
 
 class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     """Using email instead of username."""
@@ -71,10 +86,10 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
-
+    is_guest = models.BooleanField(default=False)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
-    objects = CustomUserManager()
+    objects = CustomUserManager()    
 
     def __str__(self):
         """Str method to return User Email name."""

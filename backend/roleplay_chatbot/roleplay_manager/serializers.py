@@ -370,3 +370,21 @@ class LorebookInfoSerializer(serializers.ModelSerializer):
         fields = ('name', 'description', 'is_public',
                   'user', 'entries')
         extra_kwargs = {'user': {'required': False}}
+
+
+class GuestUserCreateSerializer(serializers.ModelSerializer):
+    """For guest user creation class serializer"""
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'is_guest', 'full_name', 'username', 'email']
+
+
+class GuestRoomInfoChatSerializer(serializers.ModelSerializer):
+    """Serializer for guest Room Info Chat Message """
+    user = UserInfoSerializer(many=False, read_only=True)
+    character = RoomCharacterInfoSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = ChatRoom
+        fields = ('room_id', 'type', 'group_name', 'user', 'character')

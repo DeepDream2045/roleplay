@@ -99,15 +99,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             sender_user_message = text_data_json['text']
             response = {}
 
-            response_instance = await self.create_msg(self.chat, sender_user_message)
             character_attribute = await database_sync_to_async(self.set_character_info)()
 
             conversation = start_model_llama2(character_attribute)
             response = conversation.invoke(sender_user_message)
             character_message = response["response"].replace("\n\n", "\n")
 
-            response_instance.character_message = character_message
-            await database_sync_to_async(response_instance.save)()
+            if not self.user.is_guest:
+                response_instance = await self.create_msg(self.chat, sender_user_message)
+                response_instance.character_message = character_message
+                await database_sync_to_async(response_instance.save)()
 
             self.sender_profile_pic = self.user.profile_image.url if self.user.profile_image else None
             self.character_profile_pic = self.character.image.url if self.character.image else None

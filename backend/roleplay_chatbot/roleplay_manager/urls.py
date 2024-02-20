@@ -49,4 +49,8 @@ urlpatterns = [
     path('update-modal-configuration/',
          views.CustomUpdateByUser.as_view(), name='update_default_values'),
 
+    path('guest-user/', views.GuestUserCreateAPIView.as_view(), name='create_guest_user'),
+    path('guest-room-info/', views.GuestRoomInfoChatView.as_view(), name='guest_room_info'),
+    
+
 ]

@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -474,7 +475,7 @@ class GetUserCreatedModals(generics.ListAPIView):
         try:
             queryset = ModelInfo.objects.filter(user=request.user)
             if not queryset.exists():
-                    return Response({'message': 'No modal found for this id'})
+                return Response({'message': 'No modal found for this id'})
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as e:
@@ -563,8 +564,6 @@ class PublicCharacterInfoView(APIView):
                 f"{datetime.now()} :: PublicCharacterInfoView get error :: {error}")
             return Response({'error': str(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from django.shortcuts import get_object_or_404
-
 
 class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
     """Create Character Info View"""
@@ -591,7 +590,7 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                                 "tags": [
                                     "This field is required."
                                 ]
-                            }}, status=status.HTTP_400_BAD_REQUEST)
+                                }}, status=status.HTTP_400_BAD_REQUEST)
 
             tag_list = request_data.pop('tags')[0]
             tag_list = json.loads(str(tag_list))
@@ -601,7 +600,7 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                                 "model_id": [
                                     "This field is required."
                                 ]
-                            }}, status=status.HTTP_400_BAD_REQUEST)
+                                }}, status=status.HTTP_400_BAD_REQUEST)
 
             # Check if the user is the owner or the model is public
             queryset = ModelInfo.objects.filter(id=model_id).filter(
@@ -673,7 +672,6 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                     }}, status=status.HTTP_400_BAD_REQUEST)
                 # tag_list = request_data.pop('tags')[0]
                 tag_list = json.loads(str(tag_list))
-                
                 # Check if tags are provided but blank
                 if not tag_list:
                     return Response({'error': {
@@ -1281,3 +1279,60 @@ class EntryInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIView)
             logger.info(
                 f"{datetime.now()} :: LorebookInfoView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GuestUserCreateAPIView(generics.CreateAPIView):
+    """For guest user creation class view"""
+    serializer_class = GuestUserCreateSerializer
+
+    def get(self, request, *args, **kwargs):
+        try:
+            guest_user = CustomUser.objects.create_guest_user()
+            serializer = self.get_serializer(guest_user)
+            return Response({'message': 'Guest user created successfully', 'data': serializer.data, }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} ::  GuestUserCreateAPIView create error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GuestRoomInfoChatView(generics.ListCreateAPIView):
+    """For Guest Room Info class view"""
+
+    serializer_class = GuestRoomInfoChatSerializer
+    queryset = ChatRoom.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('user_id', None)
+            if not user_id:
+                return Response({'error': {
+                    "user_id": [
+                                "This field is required."
+                                ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
+            user = CustomUser.objects.get(id=user_id)
+            character_id = request.data.get('character')
+            if not character_id:
+                return Response({'error': {
+                                "character": [
+                                    "This field is required."
+                                ]
+                                }}, status=status.HTTP_400_BAD_REQUEST)
+            character = CharacterInfo.objects.get(id=character_id)
+
+            chat = ChatRoom.objects.create(
+                user=user, character=character)
+            if chat.group_name is None:
+                chat.group_name = chat.get_group_name
+                chat.save()
+            if chat.character.initial_message is not None:
+                chat_mag = ChatMessage.objects.create(
+                    chat=chat, character_message=chat.character.initial_message)
+                chat_mag.save()
+            serializer = self.get_serializer(chat)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: RoomInfoChatView create error :: {e}")
+            return Response({'error ': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
