@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
     """Class for chat conversion"""
 
@@ -18,7 +19,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         self.user = None
         self.character = None
-        self.room_group_id =None
+        self.room_group_id = None
         self.chat = None
         return None
 
@@ -37,8 +38,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.accept()
         except Exception as error:
             print("consumer connect error: ", error)
-            logger.info(f"{datetime.now()} :: consumer connect user id- {self.user.id}")
-            logger.info(f"{datetime.now()} :: consumer connect error :: {error}")
+            logger.info(
+                f"{datetime.now()} :: consumer connect user id- {self.user.id}")
+            logger.info(
+                f"{datetime.now()} :: consumer connect error :: {error}")
             Response(f"{error} error occurs")
 
     def set_chat_room(self, user_id, room_id):
@@ -46,13 +49,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user = CustomUser.objects.filter(id=user_id)
             if user.exists():
                 self.user = user.first()
-                self.chat = ChatRoom.objects.get(user = self.user, room_id = room_id)
-                self.character = CharacterInfo.objects.filter(id=self.chat.character.id).first()
+                self.chat = ChatRoom.objects.get(
+                    user=self.user, room_id=room_id)
+                self.character = CharacterInfo.objects.filter(
+                    id=self.chat.character.id).first()
                 self.room_group_id = self.chat.room_id
                 return True
         except Exception as error:
-            print("consumer set_chat_room error: ",error)
-            logger.info(f"{datetime.now()} :: consumer set_chat_room error :: {error} :: character id- {self.character.id}")
+            print("consumer set_chat_room error: ", error)
+            logger.info(
+                f"{datetime.now()} :: consumer set_chat_room error :: {error} :: character id- {self.character.id}")
             Response(f"{error} error occurs")
 
     def set_character_info(self):
@@ -70,11 +76,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             print(custom_character_attribute)
             return custom_character_attribute
         except Exception as error:
-            print("consumer set_character_info error: ",error)
-            logger.info(f"{datetime.now()} :: consumer set_character_info user id- {self.user.id} :: character id- {self.character.id}\n{custom_character_attribute}")
-            logger.info(f"{datetime.now()} :: consumer set_character_info error :: {error}")
+            print("consumer set_character_info error: ", error)
+            logger.info(
+                f"{datetime.now()} :: consumer set_character_info user id- {self.user.id} :: character id- {self.character.id}\n{custom_character_attribute}")
+            logger.info(
+                f"{datetime.now()} :: consumer set_character_info error :: {error}")
             Response(f"{error} error occurs")
-
 
     async def disconnect(self, close_code):
         """Reconnect after a delay (5 seconds)"""
@@ -87,8 +94,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
         except Exception as error:
-            print("consumer disconnect error: ",error)
-            logger.info(f"{datetime.now()} :: consumer disconnect error :: {error}")
+            print("consumer disconnect error: ", error)
+            logger.info(
+                f"{datetime.now()} :: consumer disconnect error :: {error}")
             Response(f"{error} error occurs")
 
     async def receive(self, text_data):
@@ -97,7 +105,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             text_data_json = json.loads(text_data)
             sender_user_message = text_data_json['text']
-            response = {}
+            send_response_data, response = {}, {}
 
             character_attribute = await database_sync_to_async(self.set_character_info)()
 
@@ -109,33 +117,35 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 response_instance = await self.create_msg(self.chat, sender_user_message)
                 response_instance.character_message = character_message
                 await database_sync_to_async(response_instance.save)()
+                send_response_data['message_id'] = response_instance.id
 
             self.sender_profile_pic = self.user.profile_image.url if self.user.profile_image else None
             self.character_profile_pic = self.character.image.url if self.character.image else None
+            send_response_data.update({
+                'type': 'chat_message',
+                'group_name': self.chat.get_group_name,
+                'sender_user_message': sender_user_message,
+                'character_message': character_message,
+
+                'sender_user_id': self.user.id,
+                'sender_name': self.user.full_name,
+                'sender_username': self.user.username,
+                'sender_profile_pic': self.sender_profile_pic,
+
+                'character_id': self.character.id,
+                'character_name': self.character.character_name,
+                'character_profile_pic': self.character_profile_pic,
+            })
 
             await (self.channel_layer.group_send)(
-                self.room_group_id,
-                {
-                    'type': 'chat_message',
-                    'message_id':response_instance.id,
-                    'group_name':self.chat.get_group_name,
-                    'sender_user_message': sender_user_message,
-                    'character_message': character_message,
-
-                    'sender_user_id': self.user.id,
-                    'sender_name': self.user.full_name,
-                    'sender_username': self.user.username,
-                    'sender_profile_pic': self.sender_profile_pic,
-
-                    'character_id': self.character.id,
-                    'character_name': self.character.character_name,
-                    'character_profile_pic': self.character_profile_pic,
-                }
+                self.room_group_id, send_response_data
             )
         except Exception as error:
-            print("consumer receive error: ",error)
-            logger.info(f"{datetime.now()} :: consumer receive user id- {self.user.id} :: character id- {self.character.id}\n LLM Response:- {response}\n{character_attribute}")
-            logger.info(f"{datetime.now()} :: consumer receive error :: {error}")
+            print("consumer receive error: ", error)
+            logger.info(
+                f"{datetime.now()} :: consumer receive user id- {self.user.id} :: character id- {self.character.id}\n LLM Response:- {response}\n{character_attribute}")
+            logger.info(
+                f"{datetime.now()} :: consumer receive error :: {error}")
             Response(f"{error} error occurs")
 
     async def chat_message(self, event):
@@ -143,23 +153,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         try:
             print("CHAT RECEIVED")
-            await self.send(text_data=json.dumps({
-                'message_id':event['message_id'],
-                'sender_user_message': event['sender_user_message'],
-                'character_message': event['character_message'],
-
-                'sender_user_id': event['sender_user_id'],
-                'sender_name': event['sender_name'],
-                'sender_username': event['sender_username'],
-                'sender_profile_pic': event['sender_profile_pic'],
-
-                'character_id': event['character_id'],
-                'character_name': event['character_name'],
-                'character_profile_pic': event['character_profile_pic'],
-            }))
+            await self.send(text_data=json.dumps(event))
         except Exception as error:
-            print("consumer chat_message error: ",error)
-            logger.info(f"{datetime.now()} :: consumer chat_message error :: {error}")
+            print("consumer chat_message error: ", error)
+            logger.info(
+                f"{datetime.now()} :: consumer chat_message error :: {error}")
             Response(f"{error} error occurs")
 
     @database_sync_to_async
@@ -168,13 +166,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         try:
             if user_msg is not None:
-                chat_mag = ChatMessage.objects.create(chat=chatroom, user_message=user_msg)
+                chat_mag = ChatMessage.objects.create(
+                    chat=chatroom, user_message=user_msg)
                 chat_mag.save()
                 print('created', chat_mag.id)
                 return chat_mag
         except Exception as error:
-            print("consumer create_msg error: ",error)
-            logger.info(f"{datetime.now()} :: consumer create_msg error :: {error}")
+            print("consumer create_msg error: ", error)
+            logger.info(
+                f"{datetime.now()} :: consumer create_msg error :: {error}")
             Response(f"{error} error occurs")
-
-
