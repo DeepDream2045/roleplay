@@ -1285,9 +1285,22 @@ class GuestUserCreateAPIView(generics.CreateAPIView):
     """For guest user creation class view"""
     serializer_class = GuestUserCreateSerializer
 
+    def create_guest_user(self):
+        guest_username = f"guest_{random.randint(0000000, 9999999)}"
+        guest_email = f"{guest_username}@mail.com"
+        guest_user = CustomUser(
+            full_name=guest_username,
+            username=guest_username,
+            email=guest_email,
+            is_active=True,
+            is_guest=True,
+        )
+        guest_user.save()
+        return guest_user
+
     def get(self, request, *args, **kwargs):
         try:
-            guest_user = CustomUser.objects.create_guest_user()
+            guest_user = self.create_guest_user()
             serializer = self.get_serializer(guest_user)
             return Response({'message': 'Guest user created successfully', 'data': serializer.data, }, status=status.HTTP_201_CREATED)
         except Exception as e:
