@@ -93,6 +93,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_id,
                 self.channel_name
             )
+            # try:
+            #     gc.collect()
+            #     torch.cuda.empty_cache()
+            # except:
+            #     pass
         except Exception as error:
             print("consumer disconnect error: ", error)
             logger.info(

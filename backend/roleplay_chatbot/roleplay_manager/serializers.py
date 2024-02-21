@@ -231,6 +231,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
         fields = '__all__'
+        extra_kwargs = {'chat': {'required': False}}
 
 
 class RoomCharacterInfoSerializer(serializers.ModelSerializer):

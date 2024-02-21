@@ -28,9 +28,9 @@ urlpatterns = [
          name='magic_login_verify'),
 
     path('model_info/', views.ModelInfoAPIView.as_view(), name='model_info'),
-    path('user-models-list/',
+    path('user_models_list/',
          views.GetUserCreatedModals.as_view(), name='GetUserCreatedModals'),
-    path('modal-info-by-id/', views.ModelInfoByIDView.as_view(), name='modalInfoById'),
+    path('modal_info_by_id/', views.ModelInfoByIDView.as_view(), name='modalInfoById'),
 
     path('tag_info/', views.TagInfoView.as_view(), name='tag_info'),
     path('public_tag_info/', views.TagListInfoView.as_view(), name='public_tag_info'),
@@ -46,11 +46,15 @@ urlpatterns = [
     path('feedback/', views.FeedbackView.as_view(), name='feedback'),
     path('user_profile/', views.UserProfileView.as_view(), name='user_profile'),
 
-    path('update-modal-configuration/',
+    path('update_modal_configuration/',
          views.CustomUpdateByUser.as_view(), name='update_default_values'),
 
-    path('guest-user/', views.GuestUserCreateAPIView.as_view(), name='create_guest_user'),
-    path('guest-room-info/', views.GuestRoomInfoChatView.as_view(), name='guest_room_info'),
-    
+    path('create_guest_user/', views.GuestUserCreateAPIView.as_view(),
+         name='create_guest_user'),
+    path('guest_create_room_info/', views.GuestRoomInfoChatView.as_view(),
+         name='guest_create_room_info'),
+    path('guest_room_info_by_id/', views.GuestRoomInfoByIdView.as_view(),
+         name='guest_room_info_by_id'),
+
 
 ]

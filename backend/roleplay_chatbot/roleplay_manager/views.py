@@ -356,7 +356,6 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = ModelInfoSerializer
-    queryset = ModelInfo.objects.all()
 
     def get_serializer_context(self):
         """
@@ -425,7 +424,17 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
         try:
             id = request.data.get('id', None)
-            model_info = ModelInfo.objects.get(id=id, user=request.user)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
+            model_info = ModelInfo.objects.get(id=id)
+
+            # Check if the user has permission to delete the character
+            if model_info.user != request.user:
+                return Response({'error': "You do not have permission to delete this modal."}, status=status.HTTP_403_FORBIDDEN)
             model_info.delete()
             return Response({'message': 'LLM Model info deleted successfully'})
         except ModelInfo.DoesNotExist:
@@ -570,7 +579,6 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
 
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = CharacterInfoSerializer
-    queryset = CharacterInfo.objects.all()
 
     def get_serializer_context(self):
         """
@@ -651,8 +659,18 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         try:
             tag_list = None
             id = request.data.get('id', None)
-            character_info = CharacterInfo.objects.get(
-                id=id, user=request.user)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
+
+            character_info = CharacterInfo.objects.get(id=id)
+
+            # Check if the user has permission to delete the character
+            if character_info.user != request.user:
+                return Response({'error': "You do not have permission to update this character."}, status=status.HTTP_403_FORBIDDEN)
             # Use _id for direct foreign key relationship
             model_id = character_info.model_id_id
             queryset = ModelInfo.objects.filter(id=model_id).filter(
@@ -724,15 +742,26 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
     def delete(self, request, *args, **kwargs):
         """ 
         delete Character information
-        request body : Character id 
+        request body: Character id 
         """
         try:
             id = request.data.get('id', None)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             character_info = CharacterInfo.objects.get(id=id)
+
+            # Check if the user has permission to delete the character
+            if character_info.user != request.user:
+                return Response({'error': "You do not have permission to delete this character."}, status=status.HTTP_403_FORBIDDEN)
+
             character_info.delete()
-            return Response({'message': 'character info deleted successfully'})
+            return Response({'message': 'Character info deleted successfully'})
         except CharacterInfo.DoesNotExist:
-            return Response({'error': 'character info not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Character info not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.info(
                 f"{datetime.now()} :: CharacterInfoView delete error :: {e}")
@@ -757,7 +786,6 @@ class TagInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIV
 
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = TagInfoSerializer
-    queryset = Tag.objects.all()
 
     def get_serializer_context(self):
         """
@@ -771,6 +799,7 @@ class TagInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIV
         return context
 
     def list(self, request, *args, **kwargs):
+        """all tags list"""
         try:
             queryset = Tag.objects.all()
             serializer = self.get_serializer(queryset, many=True)
@@ -787,7 +816,23 @@ class TagInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIV
 
         try:
             id = request.data.get('id', None)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
+            tag_name = request.data.get('tag_name', None)
+            if not tag_name:
+                return Response({'error': {
+                    "tag_name": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             tag_info = Tag.objects.get(id=id)
+            # Check if the user has permission to delete the character
+            if tag_info.user != request.user:
+                return Response({'error': "You do not have permission to update this tag."}, status=status.HTTP_403_FORBIDDEN)
             serializer = self.get_serializer(tag_info, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -802,11 +847,22 @@ class TagInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIV
     def delete(self, request, *args, **kwargs):
         """ 
         delete Tag information
-        request body : id
+        request body: id
         """
         try:
             id = request.data.get('id', None)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             tag_info = Tag.objects.get(id=id)
+
+            # Check if the user has permission to delete the tag
+            if tag_info.user != request.user:
+                return Response({'error': 'You do not have permission to delete this tag.'}, status=status.HTTP_403_FORBIDDEN)
+
             tag_info.delete()
             return Response({'message': 'Tag info deleted successfully'})
         except Tag.DoesNotExist:
@@ -821,7 +877,6 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = RoomInfoChatSerializer
-    queryset = ChatRoom.objects.all()
 
     def create(self, request, *args, **kwargs):
         try:
@@ -865,7 +920,22 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
         try:
             room_id = request.data.get('room_id', None)
+            try:
+                request.data.pop('user_id')
+                request.data.pop('character_id')
+            except:
+                pass
+
+            if not room_id:
+                return Response({'error': {
+                    "room_id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             queryset = ChatRoom.objects.get(room_id=room_id)
+            # Check if the user has permission to delete the character
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to update this Room Info."}, status=status.HTTP_403_FORBIDDEN)
             serializer = self.get_serializer(queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -887,7 +957,17 @@ class RoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
 
         try:
             room_id = request.data.get('room_id', None)
+            if not room_id:
+                return Response({'error': {
+                    "room_id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
+
             queryset = ChatRoom.objects.get(room_id=room_id)
+            # Check if the user has permission to delete the character
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to delete this Room Info."}, status=status.HTTP_403_FORBIDDEN)
             queryset.delete()
             return Response({'message': 'Room info deleted successfully'})
 
@@ -904,7 +984,6 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
 
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = ChatMessageSerializer
-    queryset = ChatMessage.objects.all()
 
     def post(self, request, *args, **kwargs):
         """ 
@@ -934,6 +1013,13 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
 
         try:
             message_id = request.data.get('message_id', None)
+
+            if not message_id:
+                return Response({'error': {
+                    "message_id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             queryset = ChatMessage.objects.get(id=message_id)
             serializer = self.get_serializer(queryset, data=request.data)
             if serializer.is_valid():
@@ -956,6 +1042,12 @@ class ChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
 
         try:
             message_id = request.data.get('message_id', None)
+            if not message_id:
+                return Response({'error': {
+                    "message_id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             queryset = ChatMessage.objects.get(id=message_id)
             queryset.delete()
             return Response({'message': 'Chat Message deleted successfully'})
@@ -1055,7 +1147,6 @@ class FeedbackView(generics.ListCreateAPIView):
 
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = FeedbackSerializer
-    # queryset = Feedback.objects.all()
 
     def get_serializer_context(self):
         """
@@ -1145,7 +1236,7 @@ class CharacterInfoByIDView(APIView):
                 serializer = UserCreatedCharacterInfoSerializer(
                     queryset, many=True)
                 if not queryset.exists():
-                    return Response({'message': 'No character found with this id'})
+                    return Response({'error': 'No character found with this id'})
                 return Response(serializer.data)
         except CharacterInfo.DoesNotExist:
             return Response({'error': 'Character Info not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -1184,7 +1275,15 @@ class LorebookInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIVi
 
         try:
             id = request.data.get('id', None)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             queryset = Lorebook.objects.get(id=id)
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to update this lorebook."}, status=status.HTTP_403_FORBIDDEN)
             serializer = self.get_serializer(queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -1206,7 +1305,15 @@ class LorebookInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIVi
 
         try:
             id = request.data.get('id', None)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             queryset = Lorebook.objects.get(id=id)
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to delete this lorebook."}, status=status.HTTP_403_FORBIDDEN)
             queryset.delete()
             return Response({'message': 'Lorebook info deleted successfully'})
 
@@ -1247,7 +1354,15 @@ class EntryInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIView)
 
         try:
             id = request.data.get('id', None)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             queryset = LorebookEntries.objects.get(id=id)
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to update this lorebook."}, status=status.HTTP_403_FORBIDDEN)
             serializer = self.get_serializer(queryset, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -1269,7 +1384,15 @@ class EntryInfoView(generics.ListAPIView, generics.RetrieveUpdateDestroyAPIView)
 
         try:
             id = request.data.get('id', None)
+            if not id:
+                return Response({'error': {
+                    "id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
             queryset = Lorebook.objects.get(id=id)
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to delete this lorebook."}, status=status.HTTP_403_FORBIDDEN)
             queryset.delete()
             return Response({'message': 'Lorebook info deleted successfully'})
 
@@ -1309,11 +1432,10 @@ class GuestUserCreateAPIView(generics.CreateAPIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class GuestRoomInfoChatView(generics.ListCreateAPIView):
+class GuestRoomInfoChatView(generics.CreateAPIView):
     """For Guest Room Info class view"""
 
     serializer_class = GuestRoomInfoChatSerializer
-    queryset = ChatRoom.objects.all()
 
     def create(self, request, *args, **kwargs):
         try:
@@ -1349,3 +1471,28 @@ class GuestRoomInfoChatView(generics.ListCreateAPIView):
             logger.info(
                 f"{datetime.now()} :: RoomInfoChatView create error :: {e}")
             return Response({'error ': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GuestRoomInfoByIdView(generics.ListAPIView):
+
+    """View for list guest room info by ID"""
+
+    def post(self, request, *args, **kwargs):
+
+        try:
+            user_id = request.data.get('user_id')
+            if not user_id:
+                return Response({'error': {
+                    "user_id": [
+                        "This field is required."
+                    ]
+                }}, status=status.HTTP_400_BAD_REQUEST)
+            rooms = ChatRoom.objects.filter(user_id=user_id)
+            if not rooms.exists():
+                return Response({'message': 'No room info found with this user id'})
+            serializer = GuestRoomInfoChatSerializer(rooms, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: GuestRoomInfoByIdView post error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
