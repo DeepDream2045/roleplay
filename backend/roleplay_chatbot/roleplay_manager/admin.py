@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (CustomUser, ChatRoom, ChatMessage, TokenRequest,
-                     Tag, CharacterInfo, ModelInfo, Feedback, UserCustomModel)
+                     Tag, CharacterInfo, ModelInfo, Feedback, LoraModelInfo)
 
 # Register your models here.
 
@@ -59,9 +59,9 @@ class FeedbackAdmin(admin.ModelAdmin):
     list_display = ['user', 'types', 'content']
 
 
-class CustomizedModelValuesAdmin(admin.ModelAdmin):
-    list_display = ['user', 'custom_model_info',
-                    'temperature', 'repetition_penalty', 'top_p', 'top_k']
+class LoraModelValuesAdmin(admin.ModelAdmin):
+    list_display = ['id', 'lora_model_name', 'user', 'lora_short_bio',
+                    'base_model_id', 'dataset', 'tuned_model_path']
 
 
 admin.site.register(CustomUser, CustomUserAdmin)
@@ -72,4 +72,4 @@ admin.site.register(Tag, TagAdmin)
 admin.site.register(CharacterInfo, CharacterInfoAdmin)
 admin.site.register(ModelInfo, ModelInfoAdmin)
 admin.site.register(Feedback, FeedbackAdmin)
-admin.site.register(UserCustomModel, CustomizedModelValuesAdmin)
+admin.site.register(LoraModelInfo, LoraModelValuesAdmin)

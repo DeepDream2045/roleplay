@@ -125,23 +125,12 @@ class Tag(TimeStampedModel):
 
 
 class ModelInfo(TimeStampedModel):
-    model_name = models.CharField(max_length=255)
+    model_name = models.CharField(max_length=255, unique=True)
     short_bio = models.TextField(null=False, blank=False)
-    model_location = models.CharField(max_length=255)
-    user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='model_infos')
-    is_public = models.BooleanField(default=True)
+    huggingFace_model_name = models.CharField(
+        max_length=100, null=True, blank=True, default='')
+    model_location = models.CharField(max_length=255, default='')
 
-    def __str__(self):
-        return self.model_name
-
-
-class UserCustomModel(TimeStampedModel):
-    user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='custom_user_modal')
-    custom_model_info = models.ForeignKey(
-        ModelInfo, on_delete=models.CASCADE, related_name='custom_model_info')
-    is_default = models.BooleanField(default=True)
     prompt_template = models.TextField(default="")
     temperature = models.FloatField(default=0.85, validators=[
                                     MinValueValidator(0), MaxValueValidator(2)])
@@ -152,8 +141,13 @@ class UserCustomModel(TimeStampedModel):
     top_k = models.IntegerField(default=50, validators=[
                                 MinValueValidator(-1), MaxValueValidator(100)])
 
+    is_public = models.BooleanField(default=True)
+    is_finetune = models.BooleanField(default=False)
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='model_infos')
+
     def __str__(self):
-        return f"{self.id}"
+        return self.model_name
 
 
 class CharacterInfo(models.Model):
@@ -168,7 +162,6 @@ class CharacterInfo(models.Model):
     character_name = models.CharField(max_length=100)
     short_bio = models.TextField(null=False, blank=False)
     character_gender = models.CharField(max_length=10, null=False, blank=False)
-    # tags = models.CharField(max_length=100, null=False, blank=False)
     tags = models.ManyToManyField(
         "roleplay_manager.Tag", related_name='character_tag')
     model_id = models.ForeignKey(
@@ -276,3 +269,71 @@ class Feedback(TimeStampedModel):
 
     def __str__(self):
         return f"{self.user.full_name}"
+
+
+class LoraModelInfo(TimeStampedModel):
+    OPTIMIZER_CHOICES = [
+        ('adamw_hf', 'adamw_hf'),
+        ('adamw_torch', 'adamw_torch'),
+        ('adamw_torch_fused', 'adamw_torch_fused'),
+        ('adamw_torch_xla', 'adamw_torch_xla'),
+        ('adamw_torch_npu_fused', 'adamw_torch_npu_fused'),
+        ('adamw_apex_fused', 'adamw_apex_fused'),
+        ('adafactor', 'adafactor'),
+        ('adamw_anyprecision', 'adamw_anyprecision'),
+        ('sgd', 'sgd'),
+        ('adagrad', 'adagrad'),
+        ('adamw_bnb_8bit', 'adamw_bnb_8bit'),
+        ('adamw_8bit', 'adamw_8bit'),
+        ('lion_8bit', 'lion_8bit'),
+        ('lion_32bit', 'lion_32bit'),
+        ('paged_adamw_32bit', 'paged_adamw_32bit'),
+        ('paged_adamw_8bit', 'paged_adamw_8bit'),
+        ('paged_lion_32bit', 'paged_lion_32bit'),
+        ('paged_lion_8bit', 'paged_lion_8bit'),
+        ('rmsprop', 'rmsprop'),
+    ]
+
+    LR_SCHEDULER_CHOICES = [
+        ("constant", "constant"),
+        ("linear", "linear"),
+        ("cosine", "cosine"),
+        ("cosine_with_restarts", "cosine_with_restarts"),
+        ("polynomial", "polynomial"),
+        ("constant_with_warmup", "constant_with_warmup"),
+        ("inverse_sqrt", "inverse_sqrt"),
+        ("reduce_lr_on_plateau", "reduce_lr_on_plateau"),
+    ]
+
+    BIAS_CHOICES = [
+        ('none', 'none'),
+        ('all', 'all'),
+        ('lora_only', 'lora only'),
+    ]
+
+    lora_model_name = models.CharField(max_length=100)
+    lora_short_bio = models.TextField(null=False, blank=False)
+    dataset = models.TextField(max_length=100)
+    base_model_id = models.ForeignKey(
+        ModelInfo, on_delete=models.CASCADE, related_name='Base_model_info')
+    tuned_model_path = models.CharField(max_length=255, default='')
+
+    num_train_epochs = models.PositiveIntegerField(default=1)
+    per_device_train_batch_size = models.PositiveIntegerField(default=1)
+    learning_rate = models.FloatField(default=0.0002)
+    warmup_steps = models.PositiveIntegerField(default=0)
+    optimizer = models.CharField(
+        max_length=100, choices=OPTIMIZER_CHOICES, default='paged_adamw_8bit')
+    lr_scheduler_type = models.CharField(
+        max_length=100, choices=LR_SCHEDULER_CHOICES, default='constant')
+    gradient_accumulation_steps = models.PositiveIntegerField(default=1)
+    lora_alpha = models.PositiveIntegerField(default=32)
+    lora_dropout = models.FloatField(default=0.05)
+    lora_r = models.PositiveIntegerField(default=8)
+    lora_bias = models.CharField(
+        max_length=100, choices=BIAS_CHOICES, default='lora_only')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='lora_modal_creator')
+
+    def __str__(self):
+        return f"{self.lora_model_name}"

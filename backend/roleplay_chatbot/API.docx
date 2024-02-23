@@ -56,55 +56,79 @@ Request Headers:
 
 ----------------------------------------------------------
 Request Method: GET
+Note:- This will list all public and self created modal details
 Response:
 [
     {
         "id": 1,
-        "created_date": "2024-01-15T07:49:32.874281Z",
-        "modified_date": "2024-01-15T07:49:32.874304Z",
-        "model_name": "test",
+        "created_date": "2024-02-23T12:51:12.572882Z",
+        "modified_date": "2024-02-23T12:51:12.572912Z",
+        "model_name": "modal1",
         "short_bio": "test",
+        "huggingFace_model_name": "new modal",
         "model_location": "test",
-        "prompt_template": "test",
-        "temperature": 0.1,
-        "repetition_penalty": 0.1,
-        "top_p": 0.1,
-        "top_k": 1,
-        "user": 2
-    },
+        "prompt_template": "hii i am testing",
+        "temperature": 0.85,
+        "repetition_penalty": 1.15,
+        "top_p": 0.8,
+        "top_k": 50,
+        "is_public": true,
+        "is_finetune": false,
+        "user": {
+            "id": 1,
+            "full_name": "john",
+            "username": "john",
+            "email": "john@mailinator.com",
+            "profile_image": null
+        }
+    }
 ]
 
 ----------------------------------------------------------
+Note:- This API endpoint is used to create modals
+
 Request Method: Post
 Request Body:
 {
-    "model_name": "test",
-    "short_bio": "test",
-    "model_location": "test",
-    "prompt_template": "test",
-    "temperature": 0.1,
-    "repetition_penalty": 0.1,
-    "top_p": 0.1,
-    "top_k": 1
+ "model_name": "modal1",
+  "short_bio": "test",
+  "model_location": "test",
+  "is_public":"True",
+  "prompt_template": "hii i am testing",
+  "temperature": 0.85,
+  "repetition_penalty": 1.15,
+  "top_p": 0.8,
+  "top_k": 50,
+  "huggingFace_model_name":"new modal"
 }
 
 Response:
 {
     "id": 1,
-    "created_date": "2024-01-15T07:49:32.874281Z",
-    "modified_date": "2024-01-15T07:49:32.874304Z",
-    "model_name": "test",
+    "created_date": "2024-02-23T12:51:12.572882Z",
+    "modified_date": "2024-02-23T12:51:12.572912Z",
+    "model_name": "modal1",
     "short_bio": "test",
+    "huggingFace_model_name": "new modal",
     "model_location": "test",
-    "prompt_template": "test",
-    "temperature": 0.1,
-    "repetition_penalty": 0.1,
-    "top_p": 0.1,
-    "top_k": 1,
-    "user": 2
+    "prompt_template": "hii i am testing",
+    "temperature": 0.85,
+    "repetition_penalty": 1.15,
+    "top_p": 0.8,
+    "top_k": 50,
+    "is_public": true,
+    "is_finetune": false,
+    "user": {
+        "id": 1,
+        "full_name": "john",
+        "username": "john",
+        "email": "john@mailinator.com",
+        "profile_image": null
+    }
 }
 
 ----------------------------------------------------------
+Note:- This API endpoint is used to update modal values , which fields you want to update.
 Request Method: PUT
 Request Body:
 {
@@ -137,6 +161,45 @@ Response:
 }
 
 ##############################################################################
+
+For get all modal  info list created by self 
+Request URL: http://127.0.0.1:8000/user_models_list/
+Note:- this url is used for get all the modals created by self. 
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: get
+
+Response:
+[
+    {
+        "id": 2,
+        "created_date": "2024-02-23T12:59:13.069729Z",
+        "modified_date": "2024-02-23T12:59:13.069751Z",
+        "model_name": "modal2",
+        "short_bio": "test",
+        "huggingFace_model_name": "new modal",
+        "model_location": "test",
+        "prompt_template": "hii i am testing",
+        "temperature": 0.85,
+        "repetition_penalty": 1.15,
+        "top_p": 0.8,
+        "top_k": 50,
+        "is_public": true,
+        "is_finetune": false,
+        "user": {
+            "id": 1,
+            "full_name": "john",
+            "username": "john",
+            "email": "john@mailinator.com",
+            "profile_image": null
+        }
+    }
+]
+
+##############################################################################
 For Character Info APIs
 Request URL: http://localhost:8000/character_info/
 
@@ -145,83 +208,97 @@ Request Headers:
     user-refresh-token: refresh_token
 
 ----------------------------------------------------------
+Note:- This will list the characters, created by self.
 Request Method: GET
 Response:
 [
     {
-        "id": 11,
+        "id": 1,
         "model_id": {
-            "id": 1,
-            "model_name": "update test",
-            "short_bio": "update test",
+            "id": 2,
+            "model_name": "modal2",
+            "short_bio": "test",
             "model_location": "test",
-            "prompt_template": "test",
-            "temperature": 0.1,
-            "repetition_penalty": 0.1,
-            "top_p": 0.1,
-            "top_k": 1
+            "prompt_template": "hii i am testing",
+            "temperature": 0.85,
+            "repetition_penalty": 1.15,
+            "top_p": 0.8,
+            "top_k": 50
         },
         "user": {
             "id": 1,
-            "full_name": "test",
+            "full_name": "john",
+            "username": "john",
             "profile_image": null
         },
         "tags": [
             {
                 "id": 1,
-                "tag_name": "Anime"
+                "tag_name": "man"
             }
         ],
-        "character_name": "Test Elon",
-        "short_bio": "Entrepreneur and business magnate. CEO of SpaceX and Tesla, among other ventures. Pioneer in electric vehicles, space exploration, and renewable energy. straight forward person, who talks sarcastically.",
-        "character_gender": "male",
-        "prompt": "Tone_and_Style: Maintain Casual, informal conversation, with occasional formalities in business-related discussions. while engaging with the user,\nUser_engagement_style: Maintain straightforward and directness in your communication with users.,\n",
-        "character_visibility": "private",
-        "initial_message": "Hello",
+        "character_name": "john char",
+        "short_bio": "Short bio for the char...",
+        "character_gender": "female",
+        "prompt": "sdsd",
+        "character_story": "story",
+        "character_visibility": "unlisted",
+        "initial_message": "Initial message for the character...\"",
         "image": null,
         "NSFW": false,
-        "lorebook": null,
+        "lorebook": "Lorebook content...",
         "language": "ENGLISH",
-        "created_date": "2024-01-25T15:56:31.330173Z",
-        "modified_date": "2024-01-25T15:56:39.070319Z"
-    },
+        "created_date": "2024-02-23T13:02:41.088476Z",
+        "modified_date": "2024-02-23T13:02:41.088492Z"
+    }
 ]
-
 ----------------------------------------------------------
 Request Method: Post
 Request Body:
+Request Body:
 {
-    "character_name":"Test Role",
-    "short_bio":"Test Role",
-    "character_gender":"male",
-    "tags":[1,3],
-    "model_id":"1",
-    "prompt":"test prompt",
-    "character_visibility":"private",
-    "initial_message":"",
-    "NSFW":false,
-    "lorebook":"",
-    "language":""
-}
-
-Response:
-{
-    "id": 1,
     "character_name": "Test Role",
     "short_bio": "Test Role",
-    "character_gender": "male",
-    "tags": "Anime",
-    "prompt": "test prompt",
-    "character_visibility": "private",
-    "initial_message": "",
-    "image": null,
-    "NSFW": false,
-    "lorebook": "",
-    "language": "",
-    "created_date": "2024-01-15T08:27:55.498415Z",
-    "modified_date": "2024-01-15T08:27:55.498436Z",
-    "model_id": 1,
-    "user": 2
+    "character_gender": "female",
+    "prompt": "Character prompt...",
+    "character_story": "story",
+    "lorebook": "Lorebook content...",
+    "language": "ENGLISH",
+    "character_visibility": "unlisted",
+    "initial_message": "Initial message for the character...",
+    "tags":[1],
+    "model_id":"1",
+    "NSFW":false   
+}
+Response:
+{
+    "message": "success",
+    "data": {
+        "id": 1,
+        "user": {
+            "id": 1,
+            "full_name": "john",
+            "username": "john",
+            "profile_image": null
+        },
+        "tags": [
+            1
+        ],
+        "character_name": "john char",
+        "short_bio": "Short bio for the char...",
+        "character_gender": "female",
+        "prompt": "sdsd",
+        "character_story": "story",
+        "character_visibility": "unlisted",
+        "initial_message": "Initial message for the character...\"",
+        "image": null,
+        "NSFW": false,
+        "lorebook": "Lorebook content...",
+        "language": "ENGLISH",
+        "created_date": "2024-02-23T13:02:41.088476Z",
+        "modified_date": "2024-02-23T13:02:41.088492Z",
+        "model_id": 2
+    }
 }
 
 ----------------------------------------------------------
@@ -497,22 +574,28 @@ Response:
 [
     {
         "id": 1,
-        "character_name": "Test Role",
+        "user": {
+            "id": 1,
+            "full_name": "john",
+            "username": "john",
+            "profile_image": null
+        },
+        "tags": [1],
+        "character_name": "testing user",
         "short_bio": "Test Role",
         "character_gender": "male",
-        "tags": "Anime",
         "prompt": "test prompt",
-        "character_visibility": "private",
-        "initial_message": "",
+        "character_story": "Updated Story",
+        "character_visibility": "public",
+        "initial_message": "Initial message for the character...\"",
         "image": null,
         "NSFW": false,
-        "lorebook": "",
-        "language": "",
-        "created_date": "2024-01-15T08:27:55.498415Z",
-        "modified_date": "2024-01-15T08:27:55.498436Z",
-        "model_id": 1,
-        "user": 2
-    },
+        "lorebook": "Lorebook content...",
+        "language": "ENGLISH",
+        "created_date": "2024-02-23T13:02:41.088476Z",
+        "modified_date": "2024-02-23T13:24:00.632082Z",
+        "model_id": 2
+    }
 ]
 
 
@@ -570,39 +653,40 @@ Request Body:
 Response:
 [
     {
-        "id": 3,
+        "id": 1,
         "model_id": {
-            "id": 1,
-            "model_name": "update test",
-            "short_bio": "update test",
+            "id": 2,
+            "model_name": "modal2",
+            "short_bio": "test",
             "model_location": "test",
-            "prompt_template": "test",
-            "temperature": 0.1,
-            "repetition_penalty": 0.1,
-            "top_p": 0.1,
-            "top_k": 1
+            "prompt_template": "hii i am testing",
+            "temperature": 0.85,
+            "repetition_penalty": 1.15,
+            "top_p": 0.8,
+            "top_k": 50
         },
         "user": {
             "id": 1,
-            "full_name": "Test",
-            "profile_image": "/media/image/profile/images_1.jpeg"
+            "full_name": "john",
+            "username": "john",
+            "profile_image": null
         },
-        "tags": [],
-        "character_name": "Elon Musk",
-        "short_bio": "Entrepreneur and business magnate. CEO of SpaceX and Tesla, among other ventures. Pioneer in electric vehicles, space exploration, and renewable energy. straight forward person, who talks sarcastically.",
+        "tags": [1],
+        "character_name": "testing user",
+        "short_bio": "Test Role",
         "character_gender": "male",
-        "prompt": "{{promp}}",
-        "character_visibility": "public",
-        "initial_message": "Hello",
+        "prompt": "test prompt",
+        "character_story": "Updated Story",
+        "character_visibility": "unlisted",
+        "initial_message": "Initial message for the character...\"",
         "image": null,
         "NSFW": false,
-        "lorebook": null,
+        "lorebook": "Lorebook content...",
         "language": "ENGLISH",
-        "created_date": "2024-01-22T08:49:00.050222Z",
-        "modified_date": "2024-01-22T08:49:00.050245Z"
+        "created_date": "2024-02-23T13:02:41.088476Z",
+        "modified_date": "2024-02-23T13:06:55.181468Z"
     }
 ]
-
 ##############################################################################
 For Feedback APIs
 Request URL: http://127.0.0.1:8000/user_profile/
@@ -695,3 +779,285 @@ Response:
     "character_name": "Hermione Granger",
     "character_profile_pic": "/media/image/character/e9bf8859-073e-497b-9451-7688f01842c5_yVAAY79.webp"
 }
+
+##############################################################################
+
+For create guest user info API
+Request URL: http://127.0.0.1:8000/create_guest_user/
+(Note:- with this url you can get guest user information, In this we will not send any authorization token in headers )
+
+----------------------------------------------------------
+Request Method: get
+Response:
+{
+    "message": "Guest user created successfully",
+    "data": {
+        "id": 25,
+        "is_guest": true,
+        "full_name": "guest_23528",
+        "username": "guest_23528",
+        "email": "guest_23528@mail.com"
+    }
+}
+
+##############################################################################
+
+Create room ID for GUEST USERS API
+
+Request URL: http://127.0.0.1:8000/guest_create_room_info/
+(Note:- with this url you can get room info for guest user, In this we will not send any authorization token in headers )
+
+----------------------------------------------------------
+Request Method: Post
+Request Body:
+{
+    "user_id":1,
+    "character_id":26
+}
+
+Response:
+{
+    "message": "success",
+    "data": {
+        "room_id": "2UGFmLamKridAhWAettW62",
+        "type": 1,
+        "group_name": "Hermione Granger",
+        "user": {
+            "id": 25,
+            "full_name": "guest_23528",
+            "username": "guest_23528",
+            "profile_image": null
+        },
+        "character": {
+            "id": 26,
+            "character_name": "Hermione Granger",
+            "short_bio": "Hermione Granger is a remarkable young witch with exceptional intelligence, drive, and independence. She excels academically at Hogwarts School of Witchcraft and Wizardry, where her peers and professors respect her abilities in magic. Hermione is committed to fighting for justice, empathy, and the greater good, regardless of authority figures or danger. Her assertiveness and independence make her both admirable and relatable to people of all ages. Hermione continues to evolve and develop, becoming more confident and willing to take on greater risks in her pursuit of justice and the greater good. Overall, Hermione serves as an inspiration to generations with her intelligence, drive, and determination.",
+            "character_gender": "Female",
+            "prompt": "Personality: Hermione Granger is a strong-willed and determined young woman with a sharp mind and a deep sense of justice. She is fiercely loyal to her friends and will go to great lengths to protect them. As an INTJ personality type, she is analytical and strategic, always looking for the most efficient way to solve a problem. However, she can also be stubborn and opinionated, sometimes struggling to see other perspectives.\r\n\r\nAppearance: Hermione has bushy, curly hair that she often wears in a neat bun. She has large, expressive brown eyes and a sharp jawline. She is petite in stature but carries herself with a confident and commanding presence.\r\n\r\nLife story: Hermione was born to Muggle parents and discovered her magical abilities at a young age. She was a bookworm from a young age and quickly became fascinated with the wizarding world. When she received her letter to attend Hogwarts School of Witchcraft and Wizardry, she was overjoyed. At Hogwarts, she quickly became known for her intelligence and her fierce determination to succeed. She formed a close bond with fellow students Harry Potter and Ron Weasley, and together, they faced many challenges and triumphs.\r\n\r\nReason for being on a chat app: Hermione is on a chat app in the hopes of finding someone who shares her love of learning and her passion for justice. She is looking for someone who can challenge her intellectually and who shares her values.\r\n\r\nName: Hermione Granger",
+            "character_story": "",
+            "character_visibility": "public",
+            "initial_message": "I'm a book-loving, problem-solving wizard with bushy hair and big dreams, seeking someone who can keep up with my wit and join me in fighting for justice.",
+            "image": "http://24.83.27.62:4002/media/image/character/_23e5e313-f670-4c84-b569-7697554f502a.jfif",
+            "NSFW": false,
+            "lorebook": "null",
+            "language": "null",
+            "created_date": "2024-02-02T04:58:50.189144Z",
+            "modified_date": "2024-02-06T15:04:41.285364Z",
+            "model_id": 1,
+            "user": 17,
+            "tags": [
+                3
+            ]
+        }
+    }
+}
+
+##############################################################################
+
+For room info list by guest id API
+
+Request URL: http://127.0.0.1:8000/guest_room_info_by_id/
+
+(Note:- with this url you can get room info list of guest users by their id, In this we will not send any authorization token in headers )
+----------------------------------------------------------
+Request Method: Post
+Request Body:
+{
+    "user_id":27 //guset_id
+}
+Response:
+[
+    {
+        "room_id": "mEHmVG9hJBP9jn3SSxspwo",
+        "type": 1,
+        "group_name": "Test testing",
+        "user": {
+            "id": 18,
+            "full_name": "guest_2645264",
+            "username": "guest_2645264",
+            "profile_image": null
+        },
+        "character": {
+            "id": 26,
+            "character_name": "Test testing",
+            "short_bio": "Test Role",
+            "character_gender": "male",
+            "prompt": "test prompt",
+            "character_story": "Updated Story",
+            "character_visibility": "unlisted",
+            "initial_message": "Initial message for the character...\"",
+            "image": null,
+            "NSFW": false,
+            "lorebook": "Lorebook content...",
+            "language": "ENGLISH",
+            "created_date": "2024-02-16T10:30:53.541257Z",
+            "modified_date": "2024-02-16T10:32:31.073533Z",
+            "model_id": 2,
+            "user": 3,
+            "tags": [
+                1
+            ]
+        }
+    }
+]
+##############################################################################
+
+For get modal info By id API
+Request URL: http://127.0.0.1:8000/modal_info_by_id/
+(Note:- if you need to change anything in the modal use the model_info API with PUT method along with the model id)
+
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: Post
+Request Body:
+{
+    "id":1
+}
+
+Response:
+[
+    {
+        "id": 2,
+        "created_date": "2024-02-23T12:59:13.069729Z",
+        "modified_date": "2024-02-23T12:59:13.069751Z",
+        "model_name": "modal2",
+        "short_bio": "test",
+        "huggingFace_model_name": "new modal",
+        "model_location": "test",
+        "prompt_template": "hii i am testing",
+        "temperature": 0.85,
+        "repetition_penalty": 1.15,
+        "top_p": 0.8,
+        "top_k": 50,
+        "is_public": true,
+        "is_finetune": false,
+        "user": {
+            "id": 1,
+            "full_name": "john",
+            "username": "john",
+            "email": "john@mailinator.com",
+            "profile_image": null
+        }
+    }
+]
+
+
+##############################################################################
+For Lora Model Info APIs
+Request URL: http://localhost:8000/lora_modal_info/
+
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: GET
+Note:- This will list all public and self created modal details
+Response:
+[
+    {
+        "id": 2,
+        "created_date": "2024-02-23T13:27:29.149316Z",
+        "modified_date": "2024-02-23T13:27:29.149338Z",
+        "lora_model_name": "test_lora34",
+        "lora_short_bio": "test_lora",
+        "dataset_path": "test_lora",
+        "tuned_model_path": "test_lora",
+        "num_train_epochs": 1,
+        "per_device_train_batch_size": 1,
+        "learning_rate": 0.0002,
+        "warmup_steps": 0,
+        "optimizer": "adamw_torch",
+        "lr_scheduler_type": "constant",
+        "gradient_accumulation_steps": 1,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "lora_r": 8,
+        "lora_bias": "none",
+        "base_model_id": 2,
+        "user": 1
+    }
+]
+
+----------------------------------------------------------
+Note:- This API endpoint is used to create modals
+
+Request Method: Post
+Request Body:
+{
+        "lora_model_name": "test_lora34",
+        "lora_short_bio": "test_lora",
+        "dataset_path": "test_lora",
+        "tuned_model_path": "test_lora",
+        "num_train_epochs": 1,
+        "per_device_train_batch_size": 1,
+        "learning_rate": 0.0002,
+        "warmup_steps": 0,
+        "optimizer": "adamw_torch",
+        "lr_scheduler_type": "constant",
+        "gradient_accumulation_steps": 1,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "lora_r": 8,
+        "lora_bias": "none",
+        "base_model_id": 2,
+}
+
+Response:
+{
+    "id": 3,
+    "created_date": "2024-02-23T13:31:30.483983Z",
+    "modified_date": "2024-02-23T13:31:30.484005Z",
+    "lora_model_name": "test_lora",
+    "lora_short_bio": "test_lora",
+    "dataset_path": "test_lora",
+    "tuned_model_path": "test_lora",
+    "num_train_epochs": 1,
+    "per_device_train_batch_size": 1,
+    "learning_rate": 0.0002,
+    "warmup_steps": 0,
+    "optimizer": "adamw_torch",
+    "lr_scheduler_type": "constant",
+    "gradient_accumulation_steps": 1,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "lora_r": 8,
+    "lora_bias": "none",
+    "base_model_id": 2,
+    "user": 1
+}
+
+----------------------------------------------------------
+Note:- This API endpoint is used to update modal values , which fields you want to update.
+Request Method: PUT
+Request Body:
+{
+    "id": 3,
+    "lora_model_name": "test_lora",
+    "lora_short_bio": "test_lora",
+    "dataset_path": "test_lora",
+    "tuned_model_path": "test_lora",
+    "num_train_epochs": 1,
+}
+
+Response:
+{
+    "message": "Lora Model info update successfully"
+}
+
+----------------------------------------------------------
+Request Method: DELETE
+Request Body:
+{
+    "id":2
+}
+
+Response:
+{
+    "message": "Lora Model info deleted successfully"
+}
+
+##############################################################################

@@ -120,14 +120,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'full_name', 'username', 'email', 'profile_image')
 
 
-class CustomizedModelValuesSerializer(serializers.ModelSerializer):
-    """Serializer for UserCustomModel model to send customized info"""
-
-    class Meta:
-        model = UserCustomModel
-        fields = '__all__'
-
-
 class ModelInfoSerializer(serializers.ModelSerializer):
     """Serializer for ModelInfo model to send Modals info"""
 
@@ -142,34 +134,28 @@ class ModelInfoSerializer(serializers.ModelSerializer):
         if ModelInfo.objects.filter(model_name=model_name).exists():
             raise serializers.ValidationError(
                 {'model_name': 'Model name is already exist.'})
+
         return attrs
 
-    @transaction.atomic
     def create(self, validated_data):
         """creating model info object"""
 
         validated_data['user'] = self.context['request'].user
+        # Check if huggingFace_model_name is present
+        huggingFace_model_name = validated_data.get('huggingFace_model_name')
+        if not huggingFace_model_name:
+            raise serializers.ValidationError({
+                'huggingFace_model_name': [
+                    'This field is required'
+                ]
+            })
         model_info_instance = ModelInfo.objects.create(**validated_data)
-        customized_values = self._create_custom_modal(
-            self.context['request'].user, model_info_instance)
         return model_info_instance
-
-    @transaction.atomic
-    def _create_custom_modal(self, user, model_info_instance):
-
-        customized_values = UserCustomModel.objects.create(
-            user=user,
-            custom_model_info=model_info_instance
-        )
-        return customized_values
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         user_representation = CustomUserSerializer(instance.user).data
         representation['user'] = user_representation
-        customized_values_representation = CustomizedModelValuesSerializer(
-            instance.custom_model_info.first()).data
-        representation['custom_model_info'] = customized_values_representation
         return representation
 
 
@@ -266,16 +252,8 @@ class CharacterModelInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ModelInfo
-        fields = ['id', 'model_name', 'short_bio', 'model_location']
-
-
-class UserCustomModelSerializer(serializers.ModelSerializer):
-    """Serializer for get character modal default information"""
-
-    class Meta:
-        model = UserCustomModel
-        fields = ['prompt_template', 'temperature',
-                  'repetition_penalty', 'top_p', 'top_k']
+        fields = ['id', 'model_name', 'short_bio', 'model_location',
+                  'prompt_template', 'temperature', 'repetition_penalty', 'top_p', 'top_k']
 
 
 class UserCreatedCharacterInfoSerializer(serializers.ModelSerializer):
@@ -295,18 +273,11 @@ class UserCreatedCharacterInfoSerializer(serializers.ModelSerializer):
         user_data = UserInfoSerializer(instance.user).data
         tags_data = CharacterTagInfoSerializer(
             instance.tags.all(), many=True).data
-        custom_model = UserCustomModelSerializer(
-            instance.model_id.custom_model_info.first()).data
-        model_id_data.update(custom_model)
         representation['model_id'] = model_id_data
         representation['user'] = user_data
         representation['tags'] = tags_data
 
         return representation
-
-    class Meta:
-        model = CharacterInfo
-        fields = '__all__'
 
 
 class FeedbackSerializer(serializers.ModelSerializer):
@@ -389,3 +360,44 @@ class GuestRoomInfoChatSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatRoom
         fields = ('room_id', 'type', 'group_name', 'user', 'character')
+
+
+class LoraModelInfoSerializer(serializers.ModelSerializer):
+    """Serializer for Lora modal Info"""
+
+    class Meta:
+        model = LoraModelInfo
+        fields = '__all__'
+        read_only_fields = ['user']
+
+    def validate(self, attrs):
+        # Check if the lora_model_name is unique
+        lora_model_name = attrs.get('lora_model_name', '')
+        if LoraModelInfo.objects.filter(lora_model_name=lora_model_name).exists():
+            raise serializers.ValidationError(
+                {'error': 'This Lora Model name already exists.'})
+        return attrs
+
+    def create(self, validated_data):
+        user = self.context['user']
+        validated_data['user'] = user
+        model_info_instance = LoraModelInfo.objects.create(**validated_data)
+        return model_info_instance
+
+
+class LoraModelInfoListSerializer(serializers.ModelSerializer):
+    """Serializer for Lora modal Info"""
+
+    class Meta:
+        model = LoraModelInfo
+        # fields = '__all__'
+        exclude = ['tuned_model_path']
+
+
+class ModelInfoListSerializer(serializers.ModelSerializer):
+    """Serializer for Lora modal Info"""
+
+    class Meta:
+        model = ModelInfo
+        # fields = '__all__'
+        exclude = ['model_location']

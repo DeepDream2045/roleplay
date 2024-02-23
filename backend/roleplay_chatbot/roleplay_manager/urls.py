@@ -46,9 +46,6 @@ urlpatterns = [
     path('feedback/', views.FeedbackView.as_view(), name='feedback'),
     path('user_profile/', views.UserProfileView.as_view(), name='user_profile'),
 
-    path('update_modal_configuration/',
-         views.CustomUpdateByUser.as_view(), name='update_default_values'),
-
     path('create_guest_user/', views.GuestUserCreateAPIView.as_view(),
          name='create_guest_user'),
     path('guest_create_room_info/', views.GuestRoomInfoChatView.as_view(),
@@ -56,5 +53,7 @@ urlpatterns = [
     path('guest_room_info_by_id/', views.GuestRoomInfoByIdView.as_view(),
          name='guest_room_info_by_id'),
 
+    path('lora_modal_info/', views.LoraModalInfoView.as_view(),
+         name='lora_modal_info'),
 
 ]
