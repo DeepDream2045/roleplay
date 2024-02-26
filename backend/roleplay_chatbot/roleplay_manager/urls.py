@@ -50,10 +50,11 @@ urlpatterns = [
          name='create_guest_user'),
     path('guest_create_room_info/', views.GuestRoomInfoChatView.as_view(),
          name='guest_create_room_info'),
+    path('guest_delete_room_info/', views.GuestRoomInfoDeleteChatView.as_view(),
+         name='guest_delete_room_info'),
     path('guest_room_info_by_id/', views.GuestRoomInfoByIdView.as_view(),
          name='guest_room_info_by_id'),
 
     path('lora_modal_info/', views.LoraModalInfoView.as_view(),
          name='lora_modal_info'),
-
 ]

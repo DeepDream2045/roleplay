@@ -1350,6 +1350,28 @@ class GuestRoomInfoChatView(generics.CreateAPIView):
                 f"{datetime.now()} :: RoomInfoChatView create error :: {e}")
             return Response({'error ': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class GuestRoomInfoDeleteChatView(generics.DestroyAPIView):
+    """For delete Guest Room Info class view"""
+
+    serializer_class = GuestRoomInfoChatSerializer
+    def destroy(self, request, *args, **kwargs):
+        try:
+            room_id = request.data.get('room_id')
+            if not room_id:
+                return missing_field_error('room_id')
+            room = ChatRoom.objects.get(room_id=room_id)
+            room.delete()
+
+            return Response({'message': 'Guest room info deleted successfully'},status=status.HTTP_200_OK)
+
+        except ChatRoom.DoesNotExist:
+            return Response({'error': 'Guest room info not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: GuestRoomInfoDeleteChatView destroy error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class GuestRoomInfoByIdView(generics.ListAPIView):
 

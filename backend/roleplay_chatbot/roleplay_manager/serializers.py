@@ -252,7 +252,7 @@ class CharacterModelInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ModelInfo
-        fields = ['id', 'model_name', 'short_bio', 'model_location',
+        fields = ['id', 'model_name', 'short_bio', 
                   'prompt_template', 'temperature', 'repetition_penalty', 'top_p', 'top_k']
 
 

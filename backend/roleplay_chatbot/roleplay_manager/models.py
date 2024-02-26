@@ -331,7 +331,7 @@ class LoraModelInfo(TimeStampedModel):
     lora_dropout = models.FloatField(default=0.05)
     lora_r = models.PositiveIntegerField(default=8)
     lora_bias = models.CharField(
-        max_length=100, choices=BIAS_CHOICES, default='lora_only')
+        max_length=100, choices=BIAS_CHOICES, default='none')
     user = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, related_name='lora_modal_creator')
 

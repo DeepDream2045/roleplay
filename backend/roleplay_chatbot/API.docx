@@ -965,7 +965,6 @@ Response:
         "lora_model_name": "test_lora34",
         "lora_short_bio": "test_lora",
         "dataset_path": "test_lora",
-        "tuned_model_path": "test_lora",
         "num_train_epochs": 1,
         "per_device_train_batch_size": 1,
         "learning_rate": 0.0002,
@@ -983,14 +982,14 @@ Response:
 ]
 
 ----------------------------------------------------------
-Note:- This API endpoint is used to create modals
+Note:- This API endpoint is used to create modals. In this lora_model_name, lora_short_bio, dataset, base_model_id are the necessary fields to create lora modals
 
 Request Method: Post
 Request Body:
 {
         "lora_model_name": "test_lora34",
         "lora_short_bio": "test_lora",
-        "dataset_path": "test_lora",
+        "dataset": "test_lora",
         "tuned_model_path": "test_lora",
         "num_train_epochs": 1,
         "per_device_train_batch_size": 1,
@@ -1061,3 +1060,20 @@ Response:
 }
 
 ##############################################################################
+
+For delete chat room of guest user APIs
+Request URL: http://localhost:8000/guest_delete_room_info/
+(Note:- with this url you can delete room info created by guest users, In this we will not send any authorization token in headers )
+
+
+----------------------------------------------------------
+Request Method: DELETE
+Request Body:
+{
+    "room_id":"JSt62LHxUe9z3YL7RttZvY"
+}
+
+Response:
+{
+    "message": "Room info deleted successfully"
+}
