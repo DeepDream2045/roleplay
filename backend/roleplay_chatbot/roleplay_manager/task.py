@@ -41,7 +41,7 @@ def fetch_lora_modal_data(user_id, lora_model_id):
                 'tokenizer': model_info.model_name,
                 'base_model': model_info.model_name,
                 'cache_dir': model_info.model_location,
-                'token': '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',
+                'token': settings.HF_TOKEN,
             },
             'set_training_arguments_param': {
                 'adapter_output_dir': unique_output_dir,

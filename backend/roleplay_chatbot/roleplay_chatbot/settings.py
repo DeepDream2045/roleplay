@@ -222,6 +222,9 @@ GOOGLE_REDIRECT_URL = os.environ.get(
 GOOGLE_OAUTH2_CLIENT_ID = os.environ.get('GOOGLE_OAUTH2_CLIENT_ID')
 GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH2_CLIENT_SECRET')
 
+# Huggingface Token
+HF_TOKEN = os.environ.get('HF_TOKEN')
+
 # Change this to your desired logs directory
 LOGGING_DIR = os.path.join(BASE_DIR, 'log_files')
 

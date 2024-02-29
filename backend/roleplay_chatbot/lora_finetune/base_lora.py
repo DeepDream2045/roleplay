@@ -164,7 +164,7 @@ class LoraModel():
 
     def generate(self, prompt):
         self.gen_config = GenerationConfig(
-            temperature=0.1,
+            temperature=0.5,
             top_p=0.75,
             top_k=40,
             num_beams=4,
@@ -178,7 +178,7 @@ class LoraModel():
                 generation_config=self.gen_config,
                 return_dict_in_generate=True,
                 output_scores=True,
-                max_new_tokens=256,
+                max_new_tokens=4096,
             )
             s = gen_output.sequences[0]
             self.gen_output = self.tokenizer.decode(s)
