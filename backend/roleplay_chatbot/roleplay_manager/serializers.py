@@ -252,7 +252,7 @@ class CharacterModelInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ModelInfo
-        fields = ['id', 'model_name', 'short_bio', 
+        fields = ['id', 'model_name', 'short_bio',
                   'prompt_template', 'temperature', 'repetition_penalty', 'top_p', 'top_k']
 
 
@@ -375,7 +375,7 @@ class LoraModelInfoSerializer(serializers.ModelSerializer):
         lora_model_name = attrs.get('lora_model_name', '')
         if LoraModelInfo.objects.filter(lora_model_name=lora_model_name).exists():
             raise serializers.ValidationError(
-                {'error': 'This Lora Model name already exists.'})
+                {'lora_model_name': 'This Lora Model name already exists.'})
         return attrs
 
     def create(self, validated_data):
@@ -401,3 +401,12 @@ class ModelInfoListSerializer(serializers.ModelSerializer):
         model = ModelInfo
         # fields = '__all__'
         exclude = ['model_location']
+
+
+class LoraTrainingStatusSerializer(serializers.ModelSerializer):
+    """Serializer for Lora modal  status Info"""
+
+    class Meta:
+        model = LoraTrainingStatus
+        fields = '__all__'
+        # exclude = ['model_location']

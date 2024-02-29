@@ -21,6 +21,7 @@ from .utility import send_email, create_img_url
 import json
 from django.db.models import Q
 from django.http import Http404
+from roleplay_manager.task import fetch_lora_modal_data
 
 logger = logging.getLogger(__name__)
 
@@ -1350,10 +1351,12 @@ class GuestRoomInfoChatView(generics.CreateAPIView):
                 f"{datetime.now()} :: RoomInfoChatView create error :: {e}")
             return Response({'error ': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class GuestRoomInfoDeleteChatView(generics.DestroyAPIView):
     """For delete Guest Room Info class view"""
 
     serializer_class = GuestRoomInfoChatSerializer
+
     def destroy(self, request, *args, **kwargs):
         try:
             room_id = request.data.get('room_id')
@@ -1362,7 +1365,7 @@ class GuestRoomInfoDeleteChatView(generics.DestroyAPIView):
             room = ChatRoom.objects.get(room_id=room_id)
             room.delete()
 
-            return Response({'message': 'Guest room info deleted successfully'},status=status.HTTP_200_OK)
+            return Response({'message': 'Guest room info deleted successfully'}, status=status.HTTP_200_OK)
 
         except ChatRoom.DoesNotExist:
             return Response({'error': 'Guest room info not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -1420,7 +1423,7 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             if not queryset.exists():
                 return Response({'error': 'No data found'})
             serializer = LoraModelInfoListSerializer(queryset, many=True)
-            return Response(serializer.data)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
         except Exception as e:
             logger.info(
                 f"{datetime.now()} :: LoraModalInfoView list error :: {e}")
@@ -1483,3 +1486,110 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             logger.info(
                 f"{datetime.now()} :: LoraModalInfoView delete error :: {e}")
             return Response({'error': f'unexpected error found: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TrainLoraAdapter(APIView):
+    """API view to start Lora Training by id for a user"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            lora_model_id = request.data.get('lora_model_id', None)
+            if not lora_model_id:
+                return missing_field_error('lora_model_id')
+
+            user_id = request.user.id
+            # Check if Lora Model ID is already trained
+            lora_status = LoraTrainingStatus.objects.filter(
+                user_id=user_id,
+                lora_model_info_id=lora_model_id,
+                current_status='completed'
+            ).exists()
+
+            if lora_status:
+                return Response({'message': 'Lora adapter already trained'}, status=status.HTTP_200_OK)
+
+            lora_training_status_instance, created = LoraTrainingStatus.objects.get_or_create(
+                user_id=user_id,
+                lora_model_info_id=lora_model_id,
+                defaults={'current_status': 'pending'}
+            )
+            result = fetch_lora_modal_data.delay(user_id, lora_model_id)
+            logger.info(
+                f"{datetime.now()} :: TrainLoraAdapter - Training started successfully for Lora Model ID: {lora_model_id}")
+            return Response({'message': 'Lora adapter training started successfully'}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception(
+                f"{datetime.now()} :: TrainLoraAdapter - An error occurred: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CurrentLoraModalStatusView(APIView):
+    """
+    API view to get the current status of a Lora modal.
+    """
+    permission_classes = [IsAuthenticated, IsValidUser]
+
+    def post(self, request, *args, **kwargs):
+
+        try:
+            lora_model_id = request.data.get('lora_model_id', None)
+            if not lora_model_id:
+                return missing_field_error(lora_model_id)
+
+            lora_model_status = LoraTrainingStatus.objects.filter(
+                lora_model_info__id=lora_model_id).first()
+
+            if not lora_model_status:
+                return Response({'error': 'No data found'}, status=status.HTTP_200_OK)
+            serializer = LoraTrainingStatusSerializer(lora_model_status)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: CurrentLoraModalStatusView fetch error :: {e}")
+            return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LoraAllStatusListView(generics.ListAPIView):
+    """API view to list All Lora Training Status instances for a user"""
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = LoraTrainingStatusSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            queryset = LoraTrainingStatus.objects.filter(user=user)
+            if not queryset.exists():
+                return Response({'error': 'No lora adapters found'}, status=status.HTTP_200_OK)
+            serializer = LoraTrainingStatusSerializer(queryset, many=True)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: LoraAllStatusListView list error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LoraStatusListView(generics.ListAPIView):
+    """API view to list completed Lora Training Status instances for a user"""
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = LoraTrainingStatusSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            # Filter queryset to get only completed Lora models
+            queryset = LoraTrainingStatus.objects.filter(
+                user=user, current_status='completed')
+
+            if not queryset.exists():
+                return Response({'message': 'No trained Lora adapters found'}, status=status.HTTP_200_OK)
+
+            serializer = LoraTrainingStatusSerializer(queryset, many=True)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+        except Exception as e:
+            logger.error(
+                f"{datetime.now()} :: CompletedLoraStatusListView list error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

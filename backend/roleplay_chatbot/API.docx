@@ -990,7 +990,6 @@ Request Body:
         "lora_model_name": "test_lora34",
         "lora_short_bio": "test_lora",
         "dataset": "test_lora",
-        "tuned_model_path": "test_lora",
         "num_train_epochs": 1,
         "per_device_train_batch_size": 1,
         "learning_rate": 0.0002,
@@ -1065,7 +1064,6 @@ For delete chat room of guest user APIs
 Request URL: http://localhost:8000/guest_delete_room_info/
 (Note:- with this url you can delete room info created by guest users, In this we will not send any authorization token in headers )
 
-
 ----------------------------------------------------------
 Request Method: DELETE
 Request Body:
@@ -1077,3 +1075,96 @@ Response:
 {
     "message": "Room info deleted successfully"
 }
+
+################################ LORA TRAINING APIS ##############################################
+
+For lora adapters training  API
+Request URL: http://localhost:8000/train_lora_adapters/
+
+----------------------------------------------------------
+Note:- This will start training for lora adapters with given lora_model_id. It will call celery to perform training  in background and show response message  
+
+Request Method: POST
+Request Body:
+{
+     "lora_model_id":"22"
+}
+
+Response:
+{
+    "message": "Lora adapter training started successfully"
+}
+
+
+####################################################################################
+
+For All lora adapters which are initiated for training Info APIs
+
+Request URL: http://localhost:8000/get_lora_adapters_status/
+
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: GET
+Note:- This will list all lora adapters(requested user only) which are initiated for training with all status pending, error, completed
+Response:
+[
+    {
+        "id": 38,
+        "created_date": "2024-02-29T08:34:14.809613Z",
+        "modified_date": "2024-02-29T08:45:50.118600Z",
+        "current_status": "completed",
+        "lora_training_error": "no error error",
+        "user": 2,
+        "lora_model_info": 20
+    },
+    {
+        "id": 35,
+        "created_date": "2024-02-29T07:16:26.362638Z",
+        "modified_date": "2024-02-29T07:16:26.432309Z",
+        "current_status": "completed",
+        "lora_training_error": no error found,
+        "user": 2,
+        "lora_model_info": 17
+    }
+]
+
+##############################################################################
+
+For list of all Trained lora adapters Info APIs
+
+Request URL: http://localhost:8000/lora_adapters_list/
+
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: GET
+Note:- This will list all trained lora adapters(requested user only) with status completed
+Response:
+[
+    {
+        "id": 38,
+        "created_date": "2024-02-29T08:34:14.809613Z",
+        "modified_date": "2024-02-29T08:45:50.118600Z",
+        "current_status": "completed",
+        "lora_training_error": "no error found",
+        "user": 2,
+        "lora_model_info": 20
+    },
+    {
+        "id": 35,
+        "created_date": "2024-02-29T07:16:26.362638Z",
+        "modified_date": "2024-02-29T07:16:26.432309Z",
+        "current_status": "completed",
+        "lora_training_error": no error found,
+        "user": 2,
+        "lora_model_info": 17
+    }
+]
+
+##############################################################################
+

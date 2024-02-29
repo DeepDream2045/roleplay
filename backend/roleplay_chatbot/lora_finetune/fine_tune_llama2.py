@@ -1,4 +1,4 @@
-from base_lora import LoraModel
+from .base_lora import LoraModel
 import time
 import torch
 from transformers import BitsAndBytesConfig, TrainingArguments
@@ -100,9 +100,9 @@ class FineTuneLLMLora:
             self.set_training_arguments(
                 adaptor, params['set_training_arguments_param'])
             self.config_lora(adaptor, params['config_lora_param'])
-            self.train_model(adaptor, params['dataset'], )
-            self.merge_adapter(adaptor, params['finetune_model_output_dir'],
-                               params['set_training_arguments_param']['adapter_output_dir'])
+            self.train_model(adaptor, params['dataset'])
+            # self.merge_adapter(adaptor, params['finetune_model_output_dir'],
+            #                    params['set_training_arguments_param']['adapter_output_dir'])
             return True
         except Exception as error:
             msg = "Lora Training Error : {}".format(error)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
             'bias': 'none',
         },
 
-        'finetune_model_output_dir': '/home/devuser/testing/fine_tune/user_model',
+        # 'finetune_model_output_dir': '/home/devuser/testing/fine_tune/user_model',
 
         'dataset': [
             {

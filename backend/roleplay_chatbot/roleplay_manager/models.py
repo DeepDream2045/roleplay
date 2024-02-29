@@ -152,11 +152,11 @@ class ModelInfo(TimeStampedModel):
 
 class CharacterInfo(models.Model):
 
-    VISIBILITY_CHOICES = [
+    VISIBILITY_CHOICES = (
         ('private', 'Private'),
         ('unlisted', 'Unlisted'),
         ('public', 'Public'),
-    ]
+    )
 
     id = models.AutoField(primary_key=True)
     character_name = models.CharField(max_length=100)
@@ -272,7 +272,7 @@ class Feedback(TimeStampedModel):
 
 
 class LoraModelInfo(TimeStampedModel):
-    OPTIMIZER_CHOICES = [
+    OPTIMIZER_CHOICES = (
         ('adamw_hf', 'adamw_hf'),
         ('adamw_torch', 'adamw_torch'),
         ('adamw_torch_fused', 'adamw_torch_fused'),
@@ -292,9 +292,9 @@ class LoraModelInfo(TimeStampedModel):
         ('paged_lion_32bit', 'paged_lion_32bit'),
         ('paged_lion_8bit', 'paged_lion_8bit'),
         ('rmsprop', 'rmsprop'),
-    ]
+    )
 
-    LR_SCHEDULER_CHOICES = [
+    LR_SCHEDULER_CHOICES = (
         ("constant", "constant"),
         ("linear", "linear"),
         ("cosine", "cosine"),
@@ -303,17 +303,17 @@ class LoraModelInfo(TimeStampedModel):
         ("constant_with_warmup", "constant_with_warmup"),
         ("inverse_sqrt", "inverse_sqrt"),
         ("reduce_lr_on_plateau", "reduce_lr_on_plateau"),
-    ]
+    )
 
-    BIAS_CHOICES = [
+    BIAS_CHOICES = (
         ('none', 'none'),
         ('all', 'all'),
         ('lora_only', 'lora only'),
-    ]
+    )
 
     lora_model_name = models.CharField(max_length=100)
     lora_short_bio = models.TextField(null=False, blank=False)
-    dataset = models.TextField(max_length=100)
+    dataset = models.TextField(null=True, blank=True)
     base_model_id = models.ForeignKey(
         ModelInfo, on_delete=models.CASCADE, related_name='Base_model_info')
     tuned_model_path = models.CharField(max_length=255, default='')
@@ -337,3 +337,25 @@ class LoraModelInfo(TimeStampedModel):
 
     def __str__(self):
         return f"{self.lora_model_name}"
+
+
+class LoraTrainingStatus(TimeStampedModel):
+    """Table to manage Lora modal training status data"""
+
+    LORA_MODAL_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('running', 'Running'),
+        ('completed', 'Completed'),
+        ('error', 'Error'),
+    )
+
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='lora_modal_training')
+    lora_model_info = models.ForeignKey(
+        LoraModelInfo, on_delete=models.CASCADE, related_name='lora_model_info')
+    current_status = models.CharField(
+        max_length=20, choices=LORA_MODAL_STATUS_CHOICES, default='')
+    lora_training_error = models.TextField(default='')
+
+    def __str__(self):
+        return str(self.current_status)

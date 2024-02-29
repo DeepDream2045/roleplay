@@ -104,12 +104,12 @@ DATABASES = {
 
     # For PostgreSQL
     'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DATABASE_NAME'),
-            'USER': os.environ.get('DATABASE_USER'),
-            'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
-            'HOST': os.environ.get('DATABASE_HOST'),
-            'PORT': os.environ.get('DATABASE_PORT', 5432),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': os.environ.get('DATABASE_HOST'),
+        'PORT': os.environ.get('DATABASE_PORT', 5432),
     }
 }
 
@@ -119,7 +119,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-SIMPLE_JWT={
+SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     "ACCESS_TOKEN_LIFETIME": timedelta(days=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
@@ -196,7 +196,7 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
 
-MEDIA_ROOT = os.path.join(BASE_DIR,'media','image')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media', 'image')
 MEDIA_URL = '/media/image/'
 
 # Default primary key field type
@@ -204,7 +204,7 @@ MEDIA_URL = '/media/image/'
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Email configuration 
+# Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -214,14 +214,16 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 EMAIL_USE_SSL = False
 
 # Frontend base route
-DASHBOARD_BASE_ROUTE=os.environ.get('DASHBOARD_BASE_ROUTE')
+DASHBOARD_BASE_ROUTE = os.environ.get('DASHBOARD_BASE_ROUTE')
 
 # Google OAuth2 settings
-GOOGLE_REDIRECT_URL = os.environ.get('GOOGLE_REDIRECT_URL', default='http://localhost:3000')
+GOOGLE_REDIRECT_URL = os.environ.get(
+    'GOOGLE_REDIRECT_URL', default='http://localhost:3000')
 GOOGLE_OAUTH2_CLIENT_ID = os.environ.get('GOOGLE_OAUTH2_CLIENT_ID')
 GOOGLE_OAUTH2_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH2_CLIENT_SECRET')
 
-LOGGING_DIR = os.path.join(BASE_DIR, 'log_files')  # Change this to your desired logs directory
+# Change this to your desired logs directory
+LOGGING_DIR = os.path.join(BASE_DIR, 'log_files')
 
 if not os.path.exists(LOGGING_DIR):
     os.makedirs(LOGGING_DIR)
@@ -245,3 +247,25 @@ LOGGING = {
         },
     },
 }
+
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Model path
+MODEL_PATH = os.path.join(BASE_DIR, 'llm_model')
+
+# Lora adapter path
+LORA_ADAPTER_PATH = os.path.join(MODEL_PATH, 'lora_adapter')
+
+# Base model path
+BASE_MODEL_PATH = os.path.join(MODEL_PATH, 'base_model')
+
+# Check and create directories if they don't exist
+for path in [MODEL_PATH, LORA_ADAPTER_PATH, BASE_MODEL_PATH]:
+    if not os.path.exists(path):
+        os.makedirs(path)
