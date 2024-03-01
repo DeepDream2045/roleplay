@@ -7,7 +7,7 @@ from datetime import datetime
 import json
 from django.conf import settings
 import os
-from lora_finetune.fine_tune_llama2 import  FineTuneLLMLora
+from lora_finetune.fine_tune_llama2 import FineTuneLLMLora
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,6 @@ def fetch_lora_modal_data(user_id, lora_model_id):
         lora_model = LoraModelInfo.objects.get(id=lora_model_id)
         logger.debug(f"{datetime.now()} :: lora_model: {lora_model}")
         model_info = ModelInfo.objects.get(id=lora_model.base_model_id.id)
-        unique_output_dir = generate_unique_output_dir(user, lora_model)
         # print(lora_model.dataset)
         dataset_dict = json.loads(lora_model.dataset)
         # print("DataType:", type(dataset_dict))
@@ -44,7 +43,7 @@ def fetch_lora_modal_data(user_id, lora_model_id):
                 'token': settings.HF_TOKEN,
             },
             'set_training_arguments_param': {
-                'adapter_output_dir': unique_output_dir,
+                'adapter_output_dir': lora_model.tuned_model_path,
                 'num_train_epochs': lora_model.num_train_epochs,
                 'per_device_train_batch_size': lora_model.per_device_train_batch_size,
                 'learning_rate': lora_model.learning_rate,
@@ -75,21 +74,6 @@ def fetch_lora_modal_data(user_id, lora_model_id):
         logger.exception(
             f"{datetime.now()} :: An unexpected error occurred: {e}")
         return {'status': 'error', 'message': f"{datetime.now()} :: An unexpected error occurred: {e}"}
-
-
-# function to generate unique name for lora adapters(adapter_output_dir) ==========================
-def generate_unique_output_dir(user, lora_modal):
-    username = user.username
-    lora_modal_name = lora_modal.lora_model_name.strip().replace(" ", "_")
-    unique_name = f"{lora_modal_name}_{random.randint(0000, 9999)}"
-
-    user_folder_path = os.path.join(settings.LORA_ADAPTER_PATH, username)
-    output_dir = os.path.join(user_folder_path, unique_name)
-    for path in [settings.LORA_ADAPTER_PATH, user_folder_path]:
-        if not os.path.exists(path):
-            os.makedirs(path)
-    print("output_dir======",output_dir)
-    return output_dir
 
 
 # second task to train lora adapters =============================

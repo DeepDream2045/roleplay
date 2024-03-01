@@ -22,6 +22,7 @@ import json
 from django.db.models import Q
 from django.http import Http404
 from roleplay_manager.task import fetch_lora_modal_data
+from lora_finetune.run_adapter import RunLoraAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -1569,7 +1570,7 @@ class LoraAllStatusListView(generics.ListAPIView):
         except Exception as e:
             logger.info(
                 f"{datetime.now()} :: LoraAllStatusListView list error :: {e}")
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class LoraStatusListView(generics.ListAPIView):
@@ -1592,4 +1593,41 @@ class LoraStatusListView(generics.ListAPIView):
         except Exception as e:
             logger.error(
                 f"{datetime.now()} :: CompletedLoraStatusListView list error :: {e}")
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class RunLoraAdapterView(APIView):
+    """API view to run lora adapter a user"""
+    permission_classes = [IsAuthenticated, IsValidUser]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            lora_model_id = request.data.get('lora_model_id', None)
+            user_text = request.data.get('user_text', None)
+            if not lora_model_id:
+                return missing_field_error('lora_model_id')
+
+            if not user_text:
+                return missing_field_error('user_text')
+
+            lora_model = LoraModelInfo.objects.get(id=lora_model_id)
+            if not lora_model:
+                return Response({'error': 'Lora Adapter not found'}, status=status.HTTP_200_OK,)
+            model_info = ModelInfo.objects.get(id=lora_model.base_model_id.id)
+            run_lora_adapter_data = {
+                'model_param': {
+                    'tokenizer': model_info.model_name,
+                    'base_model': model_info.model_name,
+                    'cache_dir': model_info.model_location,
+                    'token': settings.HF_TOKEN,
+                },
+                'adapter_path': lora_model.tuned_model_path,
+                'text': user_text
+            }
+
+            run_lora_adapter = RunLoraAdapter().run_adapter(run_lora_adapter_data)
+            return Response({'message': 'Adapter is running'}, status=status.HTTP_200_OK,)
+        except Exception as e:
+            logger.error(
+                f"{datetime.now()} :: RunLoraAdapter error :: {e}")
+            return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

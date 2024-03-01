@@ -63,7 +63,8 @@ urlpatterns = [
          name='get_lora_adapters_status'),
     path('train_lora_adapters/', views.TrainLoraAdapter.as_view(),
          name='train_lora_adapters'),
-
+#     path('run_lora_adapters/', views.RunLoraAdapterView.as_view(),
+#          name='run_lora_adapters'),
 #     path('get_lora_adapters_status_by_id/', views.CurrentLoraModalStatusView.as_view(),
 #              name='get_lora_adapters_status_by_id'),
 

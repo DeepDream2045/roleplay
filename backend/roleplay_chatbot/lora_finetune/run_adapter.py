@@ -1,4 +1,4 @@
-from base_lora import LoraModel
+from .base_lora import LoraModel
 import re
 import torch
 from transformers import BitsAndBytesConfig

@@ -6,6 +6,9 @@ from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 import json
+import os
+import random
+from django.conf import settings
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -367,7 +370,8 @@ class LoraModelInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LoraModelInfo
-        fields = '__all__'
+        fields = ['id', 'created_date', 'modified_date', 'lora_model_name', 'lora_short_bio', 'dataset', 'base_model_id', 'num_train_epochs', 'per_device_train_batch_size',
+                  'learning_rate', 'warmup_steps', 'optimizer', 'lr_scheduler_type', 'gradient_accumulation_steps', 'lora_alpha', 'lora_dropout', 'lora_r', 'lora_bias', 'user']
         read_only_fields = ['user']
 
     def validate(self, attrs):
@@ -378,10 +382,31 @@ class LoraModelInfoSerializer(serializers.ModelSerializer):
                 {'lora_model_name': 'This Lora Model name already exists.'})
         return attrs
 
+    def generate_unique_tuned_model_path(self, user, lora_modal_name):
+        username = user.username
+        lora_modal_name = lora_modal_name.strip().replace(" ", "_")
+        unique_name = f"{lora_modal_name}_{random.randint(0000, 9999)}"
+
+        user_folder_path = os.path.join(settings.LORA_ADAPTER_PATH, username)
+        tuned_model_path = os.path.join(user_folder_path, unique_name)
+        for path in [settings.LORA_ADAPTER_PATH, user_folder_path]:
+            if not os.path.exists(path):
+                os.makedirs(path)
+        return tuned_model_path
+
     def create(self, validated_data):
         user = self.context['user']
+        lora_modal_name = validated_data.get('lora_model_name', '')
+
+        # Generate a unique output directory
+        tuned_model_path = self.generate_unique_tuned_model_path(
+            user, lora_modal_name)
+
+        # Add the output_dir to the validated_data
+        validated_data['tuned_model_path'] = tuned_model_path
         validated_data['user'] = user
         model_info_instance = LoraModelInfo.objects.create(**validated_data)
+
         return model_info_instance
 
 

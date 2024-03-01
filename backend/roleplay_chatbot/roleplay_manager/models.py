@@ -317,7 +317,6 @@ class LoraModelInfo(TimeStampedModel):
     base_model_id = models.ForeignKey(
         ModelInfo, on_delete=models.CASCADE, related_name='Base_model_info')
     tuned_model_path = models.CharField(max_length=255, default='')
-
     num_train_epochs = models.PositiveIntegerField(default=1)
     per_device_train_batch_size = models.PositiveIntegerField(default=1)
     learning_rate = models.FloatField(default=0.0002)
