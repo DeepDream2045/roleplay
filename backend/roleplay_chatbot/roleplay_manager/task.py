@@ -19,9 +19,7 @@ def fetch_lora_modal_data(user_id, lora_model_id):
         lora_model = LoraModelInfo.objects.get(id=lora_model_id)
         logger.debug(f"{datetime.now()} :: lora_model: {lora_model}")
         model_info = ModelInfo.objects.get(id=lora_model.base_model_id.id)
-        # print(lora_model.dataset)
         dataset_dict = json.loads(lora_model.dataset)
-        # print("DataType:", type(dataset_dict))
         """ create entry for lora adapter in LoraTrainingStatus table """
         # Create or update LoraTrainingStatus entry with status 'running'
         training_status_instance, created = LoraTrainingStatus.objects.get_or_create(
@@ -93,7 +91,7 @@ def process_lora_modal_data(lora_modal_data, lora_model_id, user_id, current_sta
             return check_training_status
         else:
             update_lora_training_status(
-                user_id, lora_model_id, 'error', 'found error')
+                user_id, lora_model_id, 'error', '{check_training_status}')
             return 'error'
 
     except Exception as e:

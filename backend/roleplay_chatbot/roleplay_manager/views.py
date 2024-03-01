@@ -1430,6 +1430,18 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                 f"{datetime.now()} :: LoraModalInfoView list error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def is_valid_dataset(self, dataset):
+        """ validate dataset field"""
+        # Check if there are at least 50 sets in the dataset
+        if len(dataset) < 50:
+            return False
+        # Check each item in the dataset
+        for item in dataset:
+            # Check if each item is a dictionary with 'context' and 'response' keys
+            if not isinstance(item, dict) or 'context' not in item or 'response' not in item:
+                return False
+        return True
+
     def update(self, request, *args, **kwargs):
         """ 
         Update Lora Model information 
@@ -1444,10 +1456,25 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             if lora_model_info.user != request.user:
                 return Response({'error': "You do not have permission to update this lora modal."}, status=status.HTTP_403_FORBIDDEN)
             restricted_fields = [
-                'lora_model_name', 'base_model_id', 'dataset_path', 'tuned_model_path', 'user']
+                'lora_model_name', 'base_model_id', 'tuned_model_path', 'user']
             for field in restricted_fields:
                 if field in request.data:
                     return Response({'error': f'Updating {field} is not allowed.'}, status=status.HTTP_400_BAD_REQUEST)
+            # Validate the 'dataset' field=============================
+            if 'dataset' in request.data:
+                # dataset = request.data.get('dataset', lora_model_info.dataset)
+                dataset = request.data.get('dataset')
+                try:
+                    dataset = json.loads(dataset)
+                except json.JSONDecodeError:
+                    raise serializers.ValidationError(
+                        {'dataset': 'The dataset is not a valid JSON array.'})
+                if not self.is_valid_dataset(dataset):
+                    return Response({'error': {
+                        "dataset": [
+                            "The dataset is not properly formatted or contains less than 50 sets."
+                        ]
+                    }}, status=status.HTTP_400_BAD_REQUEST)
 
             # Update the loraModelInfo instance
             serializer = self.get_serializer(
@@ -1455,7 +1482,7 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             if serializer.is_valid():
                 serializer.save()
 
-                return Response({'message': 'Lora Model info update successfully'})
+                return Response({'message': 'Lora Model info updated successfully'}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except LoraModelInfo.DoesNotExist:
             return Response({'error': 'Lora Model info not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -1479,6 +1506,8 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             # Check if the user has permission to delete the modal
             if lora_model_info.user != request.user:
                 return Response({'error': "You do not have permission to delete this lora modal."}, status=status.HTTP_403_FORBIDDEN)
+            # if not lora_model_info.is_public:
+            #     return Response({'error': "You can only delete private Lora Modals."}, status=status.HTTP_403_FORBIDDEN)
             lora_model_info.delete()
             return Response({'message': 'Lora Model info deleted successfully'})
         except LoraModelInfo.DoesNotExist:
@@ -1501,21 +1530,15 @@ class TrainLoraAdapter(APIView):
                 return missing_field_error('lora_model_id')
 
             user_id = request.user.id
-            # Check if Lora Model ID is already trained
-            lora_status = LoraTrainingStatus.objects.filter(
-                user_id=user_id,
-                lora_model_info_id=lora_model_id,
-                current_status='completed'
-            ).exists()
-
-            if lora_status:
-                return Response({'message': 'Lora adapter already trained'}, status=status.HTTP_200_OK)
-
             lora_training_status_instance, created = LoraTrainingStatus.objects.get_or_create(
                 user_id=user_id,
                 lora_model_info_id=lora_model_id,
                 defaults={'current_status': 'pending'}
             )
+            if not created:
+                lora_training_status_instance.current_status = 'pending'
+                lora_training_status_instance.lora_training_error = ''
+                lora_training_status_instance.save()
             result = fetch_lora_modal_data.delay(user_id, lora_model_id)
             logger.info(
                 f"{datetime.now()} :: TrainLoraAdapter - Training started successfully for Lora Model ID: {lora_model_id}")
@@ -1544,7 +1567,7 @@ class CurrentLoraModalStatusView(APIView):
                 lora_model_info__id=lora_model_id).first()
 
             if not lora_model_status:
-                return Response({'error': 'No data found'}, status=status.HTTP_200_OK)
+                return Response({'error': 'No data found'}, status=status.HTTP_404_NOT_FOUND)
             serializer = LoraTrainingStatusSerializer(lora_model_status)
             return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
 
@@ -1564,7 +1587,7 @@ class LoraAllStatusListView(generics.ListAPIView):
             user = request.user
             queryset = LoraTrainingStatus.objects.filter(user=user)
             if not queryset.exists():
-                return Response({'error': 'No lora adapters found'}, status=status.HTTP_200_OK)
+                return Response({'error': 'No lora adapters found'}, status=status.HTTP_404_NOT_FOUND)
             serializer = LoraTrainingStatusSerializer(queryset, many=True)
             return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
         except Exception as e:
@@ -1586,7 +1609,7 @@ class LoraStatusListView(generics.ListAPIView):
                 user=user, current_status='completed')
 
             if not queryset.exists():
-                return Response({'message': 'No trained Lora adapters found'}, status=status.HTTP_200_OK)
+                return Response({'message': 'No trained Lora adapters found'}, status=status.HTTP_404_NOT_FOUND)
 
             serializer = LoraTrainingStatusSerializer(queryset, many=True)
             return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
@@ -1597,7 +1620,7 @@ class LoraStatusListView(generics.ListAPIView):
 
 
 class RunLoraAdapterView(APIView):
-    """API view to run lora adapter a user"""
+    """API view to run lora adapter """
     permission_classes = [IsAuthenticated, IsValidUser]
 
     def post(self, request, *args, **kwargs):
@@ -1612,7 +1635,7 @@ class RunLoraAdapterView(APIView):
 
             lora_model = LoraModelInfo.objects.get(id=lora_model_id)
             if not lora_model:
-                return Response({'error': 'Lora Adapter not found'}, status=status.HTTP_200_OK,)
+                return Response({'error': 'Lora Adapter not found'}, status=status.HTTP_404_NOT_FOUND)
             model_info = ModelInfo.objects.get(id=lora_model.base_model_id.id)
             run_lora_adapter_data = {
                 'model_param': {
@@ -1626,7 +1649,7 @@ class RunLoraAdapterView(APIView):
             }
 
             run_lora_adapter = RunLoraAdapter().run_adapter(run_lora_adapter_data)
-            return Response({'message': 'Adapter is running'}, status=status.HTTP_200_OK,)
+            return Response({'response_message': run_lora_adapter}, status=status.HTTP_200_OK,)
         except Exception as e:
             logger.error(
                 f"{datetime.now()} :: RunLoraAdapter error :: {e}")

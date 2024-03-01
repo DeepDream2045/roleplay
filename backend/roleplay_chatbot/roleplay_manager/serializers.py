@@ -374,6 +374,19 @@ class LoraModelInfoSerializer(serializers.ModelSerializer):
                   'learning_rate', 'warmup_steps', 'optimizer', 'lr_scheduler_type', 'gradient_accumulation_steps', 'lora_alpha', 'lora_dropout', 'lora_r', 'lora_bias', 'user']
         read_only_fields = ['user']
 
+    def is_valid_dataset(self, dataset):
+        print(type(dataset),len(dataset))
+        # Check if there are at least 50 sets in the dataset
+        if len(dataset) < 50:
+            return False
+
+        # Check each item in the dataset
+        for item in dataset:
+            # Check if each item is a dictionary with 'context' and 'response' keys
+            if not isinstance(item, dict) or 'context' not in item or 'response' not in item:
+                return False
+        return True
+
     def validate(self, attrs):
         # Check if the lora_model_name is unique
         lora_model_name = attrs.get('lora_model_name', '')
@@ -389,14 +402,25 @@ class LoraModelInfoSerializer(serializers.ModelSerializer):
 
         user_folder_path = os.path.join(settings.LORA_ADAPTER_PATH, username)
         tuned_model_path = os.path.join(user_folder_path, unique_name)
-        for path in [settings.LORA_ADAPTER_PATH, user_folder_path]:
-            if not os.path.exists(path):
-                os.makedirs(path)
+        if not os.path.exists(tuned_model_path):
+            os.makedirs(tuned_model_path)
         return tuned_model_path
 
     def create(self, validated_data):
         user = self.context['user']
         lora_modal_name = validated_data.get('lora_model_name', '')
+
+        # Check if the 'dataset' is properly formatted
+        dataset_str = validated_data.get('dataset', '')
+        try:
+            dataset = json.loads(dataset_str)
+        except json.JSONDecodeError:
+            raise serializers.ValidationError(
+                {'dataset': 'The dataset is not a valid JSON array.'})
+
+        if not self.is_valid_dataset(dataset):
+            raise serializers.ValidationError(
+                {'dataset': 'The dataset is not properly formatted or contains less than 50 sets.'})
 
         # Generate a unique output directory
         tuned_model_path = self.generate_unique_tuned_model_path(
