@@ -12,3 +12,9 @@ app = Celery('roleplay_chatbot')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 # Import tasks from each app
 app.autodiscover_tasks() 
+
+app.conf.update(
+    task_time_limit=1800,  # Set task time limit to 1800 seconds (30 minutes)
+    task_soft_time_limit=600,  # Set soft time limit to 600 seconds (10 minutes)
+    worker_max_tasks_per_child=3600,  # Set maximum tasks per worker process
+)

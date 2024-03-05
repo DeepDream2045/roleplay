@@ -3,8 +3,10 @@ from rest_framework.response import Response
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from roleplay_manager.models import CustomUser, ChatRoom, ChatMessage, CharacterInfo
+from django.conf import settings
+from roleplay_manager.models import *
 from bot.pipeline import *
+from lora_finetune.run_adapter import RunLoraAdapter
 from datetime import datetime
 import logging
 
@@ -21,6 +23,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.character = None
         self.room_group_id = None
         self.chat = None
+        self.is_adapter = False
+        self.adapter = None
         return None
 
     async def connect(self):
@@ -29,6 +33,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             user_id = self.scope['url_route']['kwargs']['id']
             room_id = self.scope['url_route']['kwargs']['room_id']
+            # try:
+            #     self.is_adapter = self.scope['url_route']['kwargs']['is_adapter']
+            # except Exception as error:
+            #     pass
             flag = await database_sync_to_async(self.set_chat_room)(user_id, room_id)
             if flag:
                 await self.channel_layer.group_add(
@@ -49,10 +57,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user = CustomUser.objects.filter(id=user_id)
             if user.exists():
                 self.user = user.first()
-                self.chat = ChatRoom.objects.get(
-                    user=self.user, room_id=room_id)
-                self.character = CharacterInfo.objects.filter(
-                    id=self.chat.character.id).first()
+                if self.is_adapter:
+                    self.chat = AdapterChatRoom.objects.get(
+                        user=self.user, room_id=room_id)
+                    self.adapter = LoraModelInfo.objects.filter(
+                        id=self.chat.adapter.id).first()
+                else:
+                    self.chat = ChatRoom.objects.get(
+                        user=self.user, room_id=room_id)
+                    self.character = CharacterInfo.objects.filter(
+                        id=self.chat.character.id).first()
                 self.room_group_id = self.chat.room_id
                 return True
         except Exception as error:
@@ -83,6 +97,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 f"{datetime.now()} :: consumer set_character_info error :: {error}")
             Response(f"{error} error occurs")
 
+    def set_lora_adapter(self, lora_model, user_text):
+        model_info = ModelInfo.objects.get(id=lora_model.base_model_id.id)
+        run_lora_adapter_data = {
+            'model_param': {
+                'tokenizer': model_info.model_name,
+                'base_model': model_info.model_name,
+                'cache_dir': model_info.model_location,
+                'token': settings.HF_TOKEN,
+            },
+            'adapter_path': lora_model.tuned_model_path,
+            'text': user_text
+        }
+        return run_lora_adapter_data
+
     async def disconnect(self, close_code):
         """Reconnect after a delay (5 seconds)"""
 
@@ -112,43 +140,70 @@ class ChatConsumer(AsyncWebsocketConsumer):
             sender_user_message = text_data_json['text']
             send_response_data, response = {}, {}
 
-            character_attribute = await database_sync_to_async(self.set_character_info)()
+            if self.is_adapter:
+                adapter_params = self.set_lora_adapter(
+                    self.adapter, sender_user_message)
+                adapter_message = RunLoraAdapter.run_adapter(
+                    params=adapter_params)
 
-            conversation = start_model_llama2(character_attribute)
-            response = conversation.invoke(sender_user_message)
-            character_message = response["response"].replace("\n\n", "\n")
+                # response_instance = await self.create_msg(self.chat, sender_user_message)
+                # response_instance.adapter_message = adapter_message
+                # await database_sync_to_async(response_instance.save)()
+                # send_response_data['message_id'] = response_instance.id
 
-            if not self.user.is_guest:
-                response_instance = await self.create_msg(self.chat, sender_user_message)
-                response_instance.character_message = character_message
-                await database_sync_to_async(response_instance.save)()
-                send_response_data['message_id'] = response_instance.id
+                send_response_data.update({
+                    'type': 'chat_message',
+                    'group_name': self.chat.get_group_name,
+                    'sender_user_message': sender_user_message,
+                    'adapter_message_message': adapter_message,
 
-            self.sender_profile_pic = self.user.profile_image.url if self.user.profile_image else None
-            self.character_profile_pic = self.character.image.url if self.character.image else None
-            send_response_data.update({
-                'type': 'chat_message',
-                'group_name': self.chat.get_group_name,
-                'sender_user_message': sender_user_message,
-                'character_message': character_message,
+                    'sender_user_id': self.user.id,
+                    'sender_name': self.user.full_name,
+                    'sender_username': self.user.username,
+                    'sender_profile_pic': self.sender_profile_pic,
 
-                'sender_user_id': self.user.id,
-                'sender_name': self.user.full_name,
-                'sender_username': self.user.username,
-                'sender_profile_pic': self.sender_profile_pic,
+                    'lora_adapter_id': self.adapter.id,
+                    'lora_model_name': self.adapter.lora_model_name,
+                })
 
-                'character_id': self.character.id,
-                'character_name': self.character.character_name,
-                'character_profile_pic': self.character_profile_pic,
-            })
+            else:
+                character_attribute = await database_sync_to_async(self.set_character_info)()
+                conversation = start_model_llama2(character_attribute)
+                response = conversation.invoke(sender_user_message)
+                character_message = response["response"].replace("\n\n", "\n")
+
+                if not self.user.is_guest:
+                    response_instance = await self.create_msg(self.chat, sender_user_message)
+                    response_instance.character_message = character_message
+                    await database_sync_to_async(response_instance.save)()
+                    send_response_data['message_id'] = response_instance.id
+
+                self.sender_profile_pic = self.user.profile_image.url if self.user.profile_image else None
+                self.character_profile_pic = self.character.image.url if self.character.image else None
+                send_response_data.update({
+                    'type': 'chat_message',
+                    'group_name': self.chat.get_group_name,
+                    'sender_user_message': sender_user_message,
+                    'character_message': character_message,
+
+                    'sender_user_id': self.user.id,
+                    'sender_name': self.user.full_name,
+                    'sender_username': self.user.username,
+                    'sender_profile_pic': self.sender_profile_pic,
+
+                    'character_id': self.character.id,
+                    'character_name': self.character.character_name,
+                    'character_profile_pic': self.character_profile_pic,
+                })
 
             await (self.channel_layer.group_send)(
                 self.room_group_id, send_response_data
             )
         except Exception as error:
             print("consumer receive error: ", error)
-            logger.info(
-                f"{datetime.now()} :: consumer receive user id- {self.user.id} :: character id- {self.character.id}\n LLM Response:- {response}\n{character_attribute}")
+            if not self.is_adapter:
+                logger.info(
+                    f"{datetime.now()} :: consumer receive user id- {self.user.id} :: character id- {self.character.id}\n LLM Response:- {response}\n{character_attribute}")
             logger.info(
                 f"{datetime.now()} :: consumer receive error :: {error}")
             Response(f"{error} error occurs")
@@ -171,8 +226,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         try:
             if user_msg is not None:
-                chat_mag = ChatMessage.objects.create(
-                    chat=chatroom, user_message=user_msg)
+                if self.is_adapter:
+                    chat_mag = AdapterChatMessage.objects.create(
+                        chat=chatroom, user_message=user_msg)
+                else:
+                    chat_mag = ChatMessage.objects.create(
+                        chat=chatroom, user_message=user_msg)
                 chat_mag.save()
                 print('created', chat_mag.id)
                 return chat_mag

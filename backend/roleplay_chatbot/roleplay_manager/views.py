@@ -1649,8 +1649,13 @@ class RunLoraAdapterView(APIView):
                 'text': user_text
             }
 
-            run_lora_adapter = RunLoraAdapter().run_adapter(run_lora_adapter_data)
-            return Response({'response_message': run_lora_adapter}, status=status.HTTP_200_OK,)
+            response, is_error = RunLoraAdapter().run_adapter(run_lora_adapter_data)
+            if is_error:
+                logger.error(
+                    f"{datetime.now()} :: RunLoraAdapter error :: {response}")
+                return Response({'error': response}, status=status.HTTP_200_OK,)
+            else:
+                return Response({'response_message': response}, status=status.HTTP_200_OK,)
         except Exception as e:
             logger.error(
                 f"{datetime.now()} :: RunLoraAdapter error :: {e}")

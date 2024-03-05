@@ -9,6 +9,14 @@ import gc
 # class LoraModel(Model):
 
 
+def release_memory(self):
+    try:
+        gc.collect()
+        torch.cuda.empty_cache()
+    except:
+        pass
+
+
 class LoraModel():
     def __init__(self):
         # self.init_model()
@@ -20,13 +28,6 @@ class LoraModel():
         self.lora_config = None
         self.gen_config = None
         self.use_quant = True
-
-    def release_memory(self):
-        try:
-            gc.collect()
-            torch.cuda.empty_cache()
-        except:
-            pass
 
     def init_tokenizer(self, base_model_name='meta-llama/Llama-2-7b-chat-hf', cache_dir=None, token=None):
         try:

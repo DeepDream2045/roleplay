@@ -1,4 +1,4 @@
-from .base_lora import LoraModel
+from .base_lora import LoraModel, release_memory
 import re
 import torch
 from transformers import BitsAndBytesConfig
@@ -27,12 +27,14 @@ class RunLoraAdapter:
             adaptor.load_adaptor(params['adapter_path'])
             output = adaptor.generate(params['text'])
             output = re.sub("<.*?>", "", output)
-            response = output.split('?')[1].strip()
-            return response
+            response = output.split(params['text'])[1].strip()
+            adaptor.lora_model_ = None
+            release_memory()
+            return response, False
         except Exception as error:
-            msg = "Lora Adapter Error : {}".format(error)
+            msg = "Run Lora Adapter Error : {}".format(error)
             print(msg)
-            return msg
+            return msg, True
 
 
 if __name__ == "__main__":
