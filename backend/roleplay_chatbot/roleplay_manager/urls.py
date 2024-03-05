@@ -71,7 +71,6 @@ urlpatterns = [
     path('adapter_chat_message/', views.AdapterChatMessageView.as_view(),
          name='adapter_chat_message'),
 
-
     #     path('get_lora_adapters_status_by_id/', views.CurrentLoraModalStatusView.as_view(),
     #              name='get_lora_adapters_status_by_id'),
 

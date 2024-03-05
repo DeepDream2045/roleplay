@@ -372,6 +372,31 @@ class BaseModelSerializer(serializers.ModelSerializer):
         fields = ('id', 'model_name', 'short_bio')
 
 
+class CurrentTrainingStatusSerializer(serializers.ModelSerializer):
+    """Serializer for Lora current training status Info"""
+
+    class Meta:
+        model = LoraTrainingStatus
+        fields = ['id', 'lora_model_info',
+                  'current_status', 'lora_training_error',]
+
+
+class LoraAdapterSerializer(serializers.ModelSerializer):
+    """Serializer for Lora modal Info"""
+
+    user = UserInfoSerializer(many=False, read_only=True)
+    base_model_id = BaseModelSerializer(many=False, read_only=True)
+    current_status = CurrentTrainingStatusSerializer(
+        many=True, read_only=True, source='lora_model_info')
+
+    class Meta:
+        model = LoraModelInfo
+        fields = ['id', 'created_date', 'modified_date', 'lora_model_name', 'lora_short_bio', 'num_train_epochs', 'per_device_train_batch_size',
+                  'learning_rate', 'warmup_steps', 'optimizer', 'lr_scheduler_type', 'gradient_accumulation_steps', 'lora_alpha',
+                  'lora_dropout', 'lora_r', 'lora_bias', 'user', 'base_model_id', 'current_status']
+        read_only_fields = ['user']
+
+
 class LoraModelInfoSerializer(serializers.ModelSerializer):
     """Serializer for Lora modal Info"""
     user = UserInfoSerializer(many=False, read_only=True)

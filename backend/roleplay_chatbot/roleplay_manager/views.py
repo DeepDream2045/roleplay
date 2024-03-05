@@ -1419,11 +1419,10 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
         """
         try:
             # Filter queryset based on user and is_public
-            user = request.user
             queryset = LoraModelInfo.objects.filter(user=request.user)
             if not queryset.exists():
                 return Response({'error': 'No data found'})
-            serializer = LoraModelInfoListSerializer(queryset, many=True)
+            serializer = LoraAdapterSerializer(queryset, many=True)
             return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
         except Exception as e:
             logger.info(
