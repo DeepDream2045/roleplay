@@ -57,15 +57,22 @@ urlpatterns = [
 
     path('lora_modal_info/', views.LoraModalInfoView.as_view(),
          name='lora_modal_info'),
-    path('lora_adapters_list/', views.LoraStatusListView.as_view(),
-         name='lora_adapters_list'),
-    path('get_lora_adapters_status/', views.LoraAllStatusListView.as_view(),
-         name='get_lora_adapters_status'),
     path('train_lora_adapters/', views.TrainLoraAdapter.as_view(),
          name='train_lora_adapters'),
     path('run_lora_adapters/', views.RunLoraAdapterView.as_view(),
          name='run_lora_adapters'),
-#     path('get_lora_adapters_status_by_id/', views.CurrentLoraModalStatusView.as_view(),
-#              name='get_lora_adapters_status_by_id'),
+    path('get_lora_adapters_status/', views.UserAllAdapterListView.as_view(),
+         name='get_lora_adapters_status'),
+    path('public_lora_adapters/', views.PublicTrainedAdaptersListView.as_view(),
+         name='public_lora_adapters'),
+
+    path('adapter_room_info/', views.AdapterRoomInfoChatView.as_view(),
+         name='adapter_room_info'),
+    path('adapter_chat_message/', views.AdapterChatMessageView.as_view(),
+         name='adapter_chat_message'),
+
+
+    #     path('get_lora_adapters_status_by_id/', views.CurrentLoraModalStatusView.as_view(),
+    #              name='get_lora_adapters_status_by_id'),
 
 ]

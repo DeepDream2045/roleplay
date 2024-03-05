@@ -1,5 +1,5 @@
 from celery import shared_task, chain
-from roleplay_manager import celery_app
+from roleplay_chatbot import celery_app
 from .models import *
 import logging
 import random
@@ -12,22 +12,43 @@ from lora_finetune.fine_tune_llama2 import FineTuneLLMLora
 logger = logging.getLogger(__name__)
 
 
+def is_valid_dataset(dataset):
+    """Validate dataset field"""
+    if len(dataset) < 50:
+        return False
+    for item in dataset:
+        if not isinstance(item, dict) or 'context' not in item or 'response' not in item:
+            return False
+    return True
+
+
 @shared_task
 def fetch_lora_modal_data(user_id, lora_model_id):
+    """  task for data formatting and to call next task to execute  """
     try:
         user = CustomUser.objects.get(id=user_id)
         lora_model = LoraModelInfo.objects.get(id=lora_model_id)
         logger.debug(f"{datetime.now()} :: lora_model: {lora_model}")
         model_info = ModelInfo.objects.get(id=lora_model.base_model_id.id)
-        dataset_dict = json.loads(lora_model.dataset)
+        try:
+            dataset_dict = json.loads(lora_model.dataset)
+            if not is_valid_dataset(dataset_dict):
+                error_message = 'The dataset is not properly formatted or contains less than 50 sets.'
+                update_lora_training_status(
+                    user_id, lora_model_id, 'error', error_message)
+                return 'error'
+        except json.JSONDecodeError:
+            error_message = 'The dataset is not a valid JSON array.'
+            update_lora_training_status(
+                user_id, lora_model_id, 'error', error_message)
+            return {'status': 'error', 'message': error_message}
+
         """ create entry for lora adapter in LoraTrainingStatus table """
-        # Create or update LoraTrainingStatus entry with status 'running'
         training_status_instance, created = LoraTrainingStatus.objects.get_or_create(
             user=user,
             lora_model_info=lora_model,
             defaults={'current_status': 'running'}
         )
-        # If the entry already existed, update the status to 'running'
         if not created:
             training_status_instance.current_status = 'running'
             training_status_instance.save()
@@ -59,18 +80,20 @@ def fetch_lora_modal_data(user_id, lora_model_id):
 
             'dataset': dataset_dict
         }
-        process_lora_modal_data.delay(
-            lora_modal_data, lora_model_id, user.id, training_status_instance.current_status)
-
-    except LoraModelInfo.DoesNotExist:
-        logger.error(
-            f"{datetime.now()} :: Lora Model with ID {lora_model_id} does not exist.")
-    except ModelInfo.DoesNotExist:
-        logger.error(
-            f"{datetime.now()} :: ModelInfo related to Lora Model {lora_model_id} does not exist.")
+        if lora_modal_data:
+            process_lora_modal_data.delay(
+                lora_modal_data, lora_model_id, user.id, training_status_instance.current_status)
+        else:
+            error_message = 'Unable to create Lora info data.'
+            update_lora_training_status(
+                user_id, lora_model_id, 'error', error_message)
+            return {'status': 'error', 'message': error_message}
     except Exception as e:
         logger.exception(
             f"{datetime.now()} :: An unexpected error occurred: {e}")
+        error_message = 'Unable to create Lora info data.'
+        update_lora_training_status(
+            user_id, lora_model_id, 'error', error_message)
         return {'status': 'error', 'message': f"{datetime.now()} :: An unexpected error occurred: {e}"}
 
 
@@ -98,12 +121,12 @@ def process_lora_modal_data(lora_modal_data, lora_model_id, user_id, current_sta
         logger.exception(
             f"{datetime.now()} :: An unexpected error occurred during processing: {e}")
         update_lora_training_status(
-            user_id, lora_model_id, 'error', 'found error')
+            user_id, lora_model_id, 'error', e)
         return 'error'
 
 
-# Helper function to update LoraTrainingStatus
 def update_lora_training_status(user_id, lora_model_id, status, error=None):
+    """ Helper function to update LoraTrainingStatus """
     try:
         lora_training_status_instance = LoraTrainingStatus.objects.get(
             user_id=user_id,

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (CustomUser, ChatRoom, ChatMessage, TokenRequest,
-                     Tag, CharacterInfo, ModelInfo, Feedback, LoraModelInfo, LoraTrainingStatus)
+                     Tag, CharacterInfo, ModelInfo, Feedback, LoraModelInfo, LoraTrainingStatus, AdapterChatRoom, AdapterChatMessage)
 
 # Register your models here.
 
@@ -61,11 +61,26 @@ class FeedbackAdmin(admin.ModelAdmin):
 
 class LoraModelValuesAdmin(admin.ModelAdmin):
     list_display = ['id', 'lora_model_name', 'user', 'lora_short_bio',
-                    'base_model_id', 'dataset', 'tuned_model_path']
+                    'base_model_id', 'tuned_model_path']
 
 class LoraTrainingStatusAdmin(admin.ModelAdmin):
     list_display = ['id', 'lora_model_info', 'user', 'current_status',
                     'lora_training_error']
+
+
+class AdapterChatRoomAdmin(admin.ModelAdmin):
+    """Create Adapter chat room info for display on admin panel"""
+
+    list_display = ['id', 'adapter_room_id',
+                    'type', 'group_name', 'user', 'adapter']
+
+
+class AdapterChatMessageAdmin(admin.ModelAdmin):
+    """Create Adapter ChatMessage for display on admin panel"""
+
+    list_display = ['id', 'adapter_chatroom',
+                    'user_message', 'adapter_message']
+
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(ChatRoom, ChatRoomAdmin)
@@ -77,3 +92,5 @@ admin.site.register(ModelInfo, ModelInfoAdmin)
 admin.site.register(Feedback, FeedbackAdmin)
 admin.site.register(LoraModelInfo, LoraModelValuesAdmin)
 admin.site.register(LoraTrainingStatus, LoraTrainingStatusAdmin)
+admin.site.register(AdapterChatRoom, AdapterChatRoomAdmin)
+admin.site.register(AdapterChatMessage, AdapterChatMessageAdmin)

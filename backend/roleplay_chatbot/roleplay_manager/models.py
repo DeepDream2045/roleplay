@@ -358,3 +358,46 @@ class LoraTrainingStatus(TimeStampedModel):
 
     def __str__(self):
         return str(self.current_status)
+
+
+class AdapterChatRoom(TimeStampedModel):
+    """Table to manage Lora modal chat room data"""
+
+    DM_ROOM = 1
+    GROUP_ROOM = 2
+
+    ROOM_TYPE = (
+        (DM_ROOM, 'DM'),
+        (GROUP_ROOM, 'Group')
+    )
+    adapter_room_id = ShortUUIDField()
+    type = models.PositiveIntegerField(choices=ROOM_TYPE, default=DM_ROOM)
+    group_name = models.CharField(max_length=30, null=True, blank=True)
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='Adapter_sender')
+    adapter = models.ForeignKey(
+        LoraModelInfo, on_delete=models.CASCADE, related_name='Lora_adapter')
+
+    def __str__(self):
+        return f"{self.adapter_room_id} - {str(self.group_name)}"
+
+    @property
+    def get_group_name(self):
+        if self.group_name is None:
+            if self.type == self.GROUP_ROOM:
+                return f"{self.user.full_name} - {self.adapter.lora_model_name}"
+            return self.adapter.lora_model_name
+        return self.group_name
+
+
+class AdapterChatMessage(TimeStampedModel):
+    """creating adapter chat message table for store adapter chat data"""
+
+    adapter_chatroom = models.ForeignKey(
+        AdapterChatRoom, on_delete=models.CASCADE, related_name='adapterChatRoom')
+    user_message = models.TextField(null=True, blank=True)
+    adapter_message = models.TextField(null=True, blank=True)
+    is_edited = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.adapter_chatroom.user.full_name}"

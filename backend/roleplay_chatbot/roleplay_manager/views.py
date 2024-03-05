@@ -1528,7 +1528,9 @@ class TrainLoraAdapter(APIView):
             lora_model_id = request.data.get('lora_model_id', None)
             if not lora_model_id:
                 return missing_field_error('lora_model_id')
-
+            queryset = LoraModelInfo.objects.get(id=lora_model_id)
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to train this adapter."}, status=status.HTTP_403_FORBIDDEN)
             user_id = request.user.id
             lora_training_status_instance, created = LoraTrainingStatus.objects.get_or_create(
                 user_id=user_id,
@@ -1577,7 +1579,7 @@ class CurrentLoraModalStatusView(APIView):
             return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class LoraAllStatusListView(generics.ListAPIView):
+class UserAllAdapterListView(generics.ListAPIView):
     """API view to list All Lora Training Status instances for a user"""
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = LoraTrainingStatusSerializer
@@ -1592,35 +1594,34 @@ class LoraAllStatusListView(generics.ListAPIView):
             return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
         except Exception as e:
             logger.info(
-                f"{datetime.now()} :: LoraAllStatusListView list error :: {e}")
+                f"{datetime.now()} :: UserAllAdapterListView list error :: {e}")
             return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class LoraStatusListView(generics.ListAPIView):
-    """API view to list completed Lora Training Status instances for a user"""
+class PublicTrainedAdaptersListView(generics.ListAPIView):
+    """API view to list all public adapter details"""
     permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = LoraTrainingStatusSerializer
 
     def list(self, request, *args, **kwargs):
         try:
-            user = request.user
-            # Filter queryset to get only completed Lora models
             queryset = LoraTrainingStatus.objects.filter(
-                user=user, current_status='completed')
+                current_status='completed')
 
             if not queryset.exists():
                 return Response({'message': 'No trained Lora adapters found'}, status=status.HTTP_404_NOT_FOUND)
 
             serializer = LoraTrainingStatusSerializer(queryset, many=True)
-            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(
-                f"{datetime.now()} :: CompletedLoraStatusListView list error :: {e}")
+                f"{datetime.now()} :: PublicTrainedAdaptersListView list error :: {e}")
             return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RunLoraAdapterView(APIView):
-    """API view to run lora adapter """
+    """API view to run lora adapter, lora_model_id and user_text needed to run adapter
+    """
     permission_classes = [IsAuthenticated, IsValidUser]
 
     def post(self, request, *args, **kwargs):
@@ -1654,3 +1655,201 @@ class RunLoraAdapterView(APIView):
             logger.error(
                 f"{datetime.now()} :: RunLoraAdapter error :: {e}")
             return Response({'error': f'An unexpected error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AdapterRoomInfoChatView(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView):
+    """For adapter Room Info class view"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = AdapterRoomInfoChatSerializer
+
+    def create(self, request, *args, **kwargs):
+        """create  adapter room information, with adapter id"""
+
+        try:
+            adapter = request.data.get('adapter', None)
+            if not adapter:
+                return missing_field_error('adapter')
+            try:
+                adapter = LoraModelInfo.objects.get(id=adapter)
+            except LoraModelInfo.DoesNotExist:
+                return Response({'error': 'Lora Model not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            chat = AdapterChatRoom.objects.create(
+                user=request.user, adapter=adapter)
+            if chat.group_name is None:
+                chat.group_name = chat.get_group_name
+                chat.save()
+
+            serializer = self.get_serializer(chat)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: AdapterRoomInfoChatView create error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def list(self, request, *args, **kwargs):
+        """list all adapter room information."""
+
+        try:
+            if request.user.is_authenticated:
+                queryset = AdapterChatRoom.objects.filter(user=request.user)
+                serializer = self.get_serializer(queryset, many=True)
+                if serializer.data:
+                    return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK,)
+                else:
+                    return Response({'error': 'No data found'}, status=status.HTTP_200_OK,)
+
+            msg = "User information not found"
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as error:
+            logger.info(
+                f"{datetime.now()} :: AdapterRoomInfoChatView list error :: {error}")
+            msg = "Please provide valid user information"
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """Update adapter room information. Request body: adapter_room_id."""
+        try:
+            adapter_room_id = request.data.get('adapter_room_id', None)
+
+            if not adapter_room_id:
+                return missing_field_error('adapter_room_id')
+
+            queryset = AdapterChatRoom.objects.get(
+                adapter_room_id=adapter_room_id)
+
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to update this Room Info."}, status=status.HTTP_403_FORBIDDEN)
+            serializer = self.get_serializer(queryset, data=request.data)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Adapter Room info updated successfully'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Validation error', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        except AdapterChatRoom.DoesNotExist:
+            return Response({'error': 'Adapter Room info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: AdapterRoomInfoChatView updated error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        """ 
+        delete adapter room information
+        request body : adapter_room_id
+        """
+
+        try:
+            adapter_room_id = request.data.get('adapter_room_id', None)
+            if not adapter_room_id:
+                return missing_field_error('adapter_room_id')
+            queryset = AdapterChatRoom.objects.get(
+                adapter_room_id=adapter_room_id)
+            # Check if the user has permission to delete the character
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to delete this Room Info."}, status=status.HTTP_403_FORBIDDEN)
+            queryset.delete()
+            return Response({'message': 'Adapter Room info deleted successfully'})
+
+        except AdapterChatRoom.DoesNotExist:
+            return Response({'error': 'Adapter Room info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: AdapterRoomInfoChatView delete error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AdapterChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
+    """For adapter Chat Message class view"""
+
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = AdapterChatMessageSerializer
+
+    def post(self, request, *args, **kwargs):
+        """ 
+        Create an AdapterChatMessage
+        request body: adapter_room_id, user_message, adapter_message 
+        """
+
+        try:
+            adapter_room_id = request.data.get('adapter_room_id')
+            user_message = request.data.get('user_message')
+            adapter_message = request.data.get('adapter_message')
+
+            if not adapter_room_id:
+                return missing_field_error('adapter_room_id')
+            if not user_message:
+                return missing_field_error('user_message')
+            if not adapter_message:
+                return missing_field_error('adapter_message')
+            chat_room = AdapterChatRoom.objects.get(
+                adapter_room_id=adapter_room_id)
+
+            queryset = AdapterChatMessage.objects.create(
+                adapter_chatroom=chat_room,
+                user_message=user_message,
+                adapter_message=adapter_message
+            )
+
+            serializer = self.get_serializer(queryset)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+
+        except Exception as error:
+            logger.info(
+                f"{datetime.now()} :: AdapterChatMessageView post error :: {error}")
+            msg = "An error occurred while creating the AdapterChatMessage"
+            return Response({"error": msg}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, *args, **kwargs):
+        """ 
+        update room information
+        request body : message_id with other values need to update
+        """
+
+        try:
+            message_id = request.data.get('message_id', None)
+
+            if not message_id:
+                return missing_field_error('message_id')
+            queryset = AdapterChatMessage.objects.get(id=message_id)
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to update this chat."}, status=status.HTTP_403_FORBIDDEN)
+            serializer = self.get_serializer(queryset, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Adapter Chat Message update successfully'})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except AdapterChatMessage.DoesNotExist:
+            return Response({'error': 'Adapter Chat Message not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: AdapterChatMessageView update error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        """ 
+        delete adapter room information
+        request body : message_id
+        """
+
+        try:
+            message_id = request.data.get('message_id', None)
+            if not message_id:
+                return missing_field_error('message_id')
+            queryset = AdapterChatMessage.objects.get(id=message_id)
+            if queryset.user != request.user:
+                return Response({'error': "You do not have permission to delete this chat."}, status=status.HTTP_403_FORBIDDEN)
+            queryset.delete()
+            return Response({'message': 'Adapter Chat Message deleted successfully'})
+
+        except AdapterChatMessage.DoesNotExist:
+            return Response({'error': 'Adapter Chat Message not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.info(
+                f"{datetime.now()} :: AdapterChatMessageView delete error :: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -365,24 +365,30 @@ class GuestRoomInfoChatSerializer(serializers.ModelSerializer):
         fields = ('room_id', 'type', 'group_name', 'user', 'character')
 
 
+class BaseModelSerializer(serializers.ModelSerializer):
+    """Serializer for base model Info in lora adapter"""
+    class Meta:
+        model = ModelInfo
+        fields = ('id', 'model_name', 'short_bio')
+
+
 class LoraModelInfoSerializer(serializers.ModelSerializer):
     """Serializer for Lora modal Info"""
+    user = UserInfoSerializer(many=False, read_only=True)
+    base_model_data = BaseModelSerializer(many=False, read_only=True)
 
     class Meta:
         model = LoraModelInfo
         fields = ['id', 'created_date', 'modified_date', 'lora_model_name', 'lora_short_bio', 'dataset', 'base_model_id', 'num_train_epochs', 'per_device_train_batch_size',
-                  'learning_rate', 'warmup_steps', 'optimizer', 'lr_scheduler_type', 'gradient_accumulation_steps', 'lora_alpha', 'lora_dropout', 'lora_r', 'lora_bias', 'user']
+                  'learning_rate', 'warmup_steps', 'optimizer', 'lr_scheduler_type', 'gradient_accumulation_steps', 'lora_alpha',
+                  'lora_dropout', 'lora_r', 'lora_bias', 'user', 'base_model_data']
         read_only_fields = ['user']
 
     def is_valid_dataset(self, dataset):
-        print(type(dataset),len(dataset))
-        # Check if there are at least 50 sets in the dataset
         if len(dataset) < 50:
             return False
 
-        # Check each item in the dataset
         for item in dataset:
-            # Check if each item is a dictionary with 'context' and 'response' keys
             if not isinstance(item, dict) or 'context' not in item or 'response' not in item:
                 return False
         return True
@@ -431,6 +437,11 @@ class LoraModelInfoSerializer(serializers.ModelSerializer):
         validated_data['user'] = user
         model_info_instance = LoraModelInfo.objects.create(**validated_data)
 
+        base_model_data = ModelInfo.objects.get(
+            id=model_info_instance.base_model_id.id)
+        model_info_instance.base_model_data = base_model_data
+        model_info_instance.save()
+
         return model_info_instance
 
 
@@ -452,10 +463,67 @@ class ModelInfoListSerializer(serializers.ModelSerializer):
         exclude = ['model_location']
 
 
+class AdapterInfoListSerializer(serializers.ModelSerializer):
+    """Serializer for Lora modal Info"""
+
+    class Meta:
+        model = LoraModelInfo
+        fields = ['id', "lora_model_name",
+                  "lora_short_bio", "base_model_id", "user"]
+
+
+class AdapterChatMessageSerializer(serializers.ModelSerializer):
+    """Serializer for adapter Chat Message """
+
+    class Meta:
+        model = AdapterChatMessage
+        fields = '__all__'
+        extra_kwargs = {'adapter_chatroom': {'required': False}}
+
+
+class AdapterRoomInfoChatSerializer(serializers.ModelSerializer):
+    """Serializer for Adapter Room Info Chat Message """
+    adapter_chatroom = AdapterChatMessageSerializer(many=True, read_only=True)
+    user = UserInfoSerializer(many=False, read_only=True)
+    adapter = AdapterInfoListSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = AdapterChatRoom
+        fields = ('adapter_room_id', 'type', 'group_name',
+                  'user', 'adapter', 'adapter_chatroom')
+
+
+class AllAdapterInfoListSerializer(serializers.ModelSerializer):
+    """Serializer for Lora modal Info"""
+
+    class Meta:
+        model = LoraModelInfo
+        exclude = ['tuned_model_path', 'dataset']
+
+
 class LoraTrainingStatusSerializer(serializers.ModelSerializer):
-    """Serializer for Lora modal  status Info"""
+    """Serializer for Lora modal status Info"""
+    user = UserInfoSerializer(many=False, read_only=True)
+    adapter_info = AdapterInfoListSerializer(many=False, read_only=True)
 
     class Meta:
         model = LoraTrainingStatus
-        fields = '__all__'
-        # exclude = ['model_location']
+        fields = ['id', 'created_date', 'modified_date', 'current_status',
+                  'lora_training_error', 'lora_model_info', 'adapter_info', 'user']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # Check if lora_model_info is an integer (ID)
+        lora_model_info = representation.get('lora_model_info')
+        lora_model_info_queryset = LoraModelInfo.objects.filter(
+            id=lora_model_info)
+        if lora_model_info_queryset.exists():
+            lora_model_info_serializer = AllAdapterInfoListSerializer(
+                lora_model_info_queryset.first())
+            representation['lora_model_info'] = lora_model_info_serializer.data
+        else:
+            # Handle the case where lora_model_info with the given id doesn't exist
+            representation['lora_model_info'] = None
+
+        return representation
