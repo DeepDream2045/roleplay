@@ -9,7 +9,7 @@ import gc
 # class LoraModel(Model):
 
 
-def release_memory(self):
+def release_memory():
     try:
         gc.collect()
         torch.cuda.empty_cache()
@@ -55,7 +55,7 @@ class LoraModel():
 
             raise ValueError("Base Tokenizer init failure")
 
-    def init_base_model(self, base_model_name='meta-llama/Llama-2-7b-chat-hf', quant_config=None, cache_dir=None, token=None):
+    def init_base_model(self, base_model_name='meta-llama/Llama-2-7b-chat-hf', quant_config=None, cache_dir=None, token=None, gpu_list=None):
         try:
             self.base_model_name = base_model_name
             if self.base_model_:
@@ -70,14 +70,14 @@ class LoraModel():
             self.base_model_ = AutoModelForCausalLM.from_pretrained(
                 base_model_name,
                 quantization_config=quant_config,
-                # device_map="auto",
                 device_map={'': torch.cuda.current_device()},
+                # device_map="auto",
+                # max_memory=gpu_list,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
                 trust_remote_code=True,
                 cache_dir=cache_dir,
                 token=token,
-                max_memory={3: "40GB", },
             )
 
             self.base_model_.config.use_cache = False
@@ -154,11 +154,13 @@ class LoraModel():
         self.trainer.train()
         self.trainer.model.save_pretrained(self.training_params.output_dir)
 
-    def load_adaptor(self, adaptor_path):
+    def load_adaptor(self, adaptor_path, gpu_list):
         if adaptor_path != '':
             self.lora_model_ = PeftModel.from_pretrained(
                 self.base_model_,
-                adaptor_path
+                adaptor_path,
+                device_map="auto",
+                max_memory=gpu_list,
             )
         elif adaptor_path == '':
             self.lora_model_ = self.base_model_

@@ -1,8 +1,13 @@
-from .adapter_base import LoraModel, release_memory
-from .gpu_allocation import get_GPU_Info
 import re
 import torch
 from transformers import BitsAndBytesConfig
+from multiprocessing import Process, Manager
+try:
+    from .adapter_base import LoraModel, release_memory
+    from .gpu_allocation import get_GPU_Info
+except:
+    from adapter_base import LoraModel, release_memory
+    from gpu_allocation import get_GPU_Info
 
 
 class RunLoraAdapter:
@@ -22,7 +27,7 @@ class RunLoraAdapter:
         ), cache_dir=params['cache_dir'], token=params['token'], gpu_list=gpu_list)
         return adaptor
 
-    def run_adapter(self, params):
+    def exe_adapter(self, shared_list, params):
         try:
             gpu_list = get_GPU_Info(10, 'run_adapter', [3, 4, 5, 6])
             if gpu_list[0]:
@@ -34,12 +39,20 @@ class RunLoraAdapter:
                 response = output.split(params['text'])[1].strip()
                 adaptor.lora_model_ = None
                 release_memory()
-                return response, False
+                shared_list.extend((response, False))
             else:
-                return gpu_list[2], True
+                shared_list.extend((gpu_list[2], True))
         except Exception as error:
             msg = "Run Lora Adapter Error : {}".format(error)
-            return msg, True
+            shared_list.extend((msg, True))
+
+    def run_adapter(self, params):
+        manager = Manager()
+        shared_list = manager.list()
+        process = Process(target=self.exe_adapter, args=(shared_list, params))
+        process.start()
+        process.join()
+        return shared_list[0], shared_list[1]
 
 
 if __name__ == "__main__":

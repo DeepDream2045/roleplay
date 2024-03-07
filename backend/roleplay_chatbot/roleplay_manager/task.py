@@ -105,17 +105,17 @@ def process_lora_modal_data(lora_modal_data, lora_model_id, user_id, current_sta
         """
         code for llm training status failed or success
         """
-        check_training_status = FineTuneLLMLora().run_lora(lora_modal_data)
+        training_status, error_msg = FineTuneLLMLora().run_lora(lora_modal_data)
         # check_training_status = 'completed'
 
-        if check_training_status:
+        if training_status:
             # Update LoraTrainingStatus to 'completed'
             update_lora_training_status(
                 user_id, lora_model_id, 'completed', 'no error found')
-            return check_training_status
+            return training_status
         else:
             update_lora_training_status(
-                user_id, lora_model_id, 'error', '{check_training_status}')
+                user_id, lora_model_id, 'error', '{}'.format(error_msg))
             return 'error'
 
     except Exception as e:

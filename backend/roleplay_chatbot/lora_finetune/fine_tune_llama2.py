@@ -1,10 +1,42 @@
-from .base_lora import LoraModel
+from datasets import Dataset
+import os
+import pandas as pd
+from peft import PeftModel
 import time
 import torch
 from transformers import BitsAndBytesConfig, TrainingArguments
-from datasets import Dataset
-from peft import PeftModel
-import pandas as pd
+# from multiprocessing import Process, Manager
+from billiard import Process, Manager
+try:
+    from .base_lora import LoraModel, release_memory
+    from .gpu_allocation import get_GPU_Info
+except:
+    from base_lora import LoraModel, release_memory
+    from gpu_allocation import get_GPU_Info
+
+
+def validate_folder(folder_path):
+    """
+    Check if specific files are present in the folder.
+
+    Args:
+        folder_path (str): The path to the folder.
+        filenames (list): A list of filenames to check for.
+
+    Returns:
+        dict: A dictionary indicating whether each file is present or not.
+    """
+
+    files_present = {}
+    filenames = ['adapter_config.json', 'adapter_model.safetensors']
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            for filename in filenames:
+                if filename == file:
+                    files_present[filename] = True
+    if len(files_present.values()) == 2:
+        return True
+    return False
 
 
 class FineTuneLLMLora:
@@ -28,12 +60,12 @@ class FineTuneLLMLora:
             bnb_4bit_use_double_quant=False
         )
 
-    def init_adaptor_model(self, params):
+    def init_adaptor_model(self, params, gpu_list):
         adaptor = LoraModel()
         adaptor.init_tokenizer(
             params['tokenizer'], cache_dir=params['cache_dir'], token=params['token'])
         adaptor.init_base_model(params['base_model'], self.create_quant_config(
-        ), cache_dir=params['cache_dir'], token=params['token'])
+        ), cache_dir=params['cache_dir'], token=params['token'], gpu_list=gpu_list)
         return adaptor
 
     def set_training_arguments(self, adaptor, params):
@@ -94,25 +126,44 @@ class FineTuneLLMLora:
         adaptor.train_data = self.prep_data(dataset)
         adaptor.train()
 
-    def run_lora(self, params):
+    def exe_lora_training(self, shared_list, params):
         try:
-            adaptor = self.init_adaptor_model(params['run_lora_param'])
-            self.set_training_arguments(
-                adaptor, params['set_training_arguments_param'])
-            self.config_lora(adaptor, params['config_lora_param'])
-            self.train_model(adaptor, params['dataset'])
-            # self.merge_adapter(adaptor, params['finetune_model_output_dir'],
-            #                    params['set_training_arguments_param']['adapter_output_dir'])
-            return True
+            gpu_list = get_GPU_Info(15, 'training', [3, 4, 5, 6])
+            if gpu_list[0]:
+
+                adaptor = self.init_adaptor_model(
+                    params['run_lora_param'], gpu_list[1])
+                self.set_training_arguments(
+                    adaptor, params['set_training_arguments_param'])
+                self.config_lora(adaptor, params['config_lora_param'])
+                self.train_model(adaptor, params['dataset'])
+                # self.merge_adapter(adaptor, params['finetune_model_output_dir'],
+                #                    params['set_training_arguments_param']['adapter_output_dir'])
+                release_memory()
+                if validate_folder(params['set_training_arguments_param']['adapter_output_dir']):
+                    shared_list.extend((True, ""))
+                else:
+                    shared_list.extend(
+                        (False, "There seems to be a problem with the network. Please try again later."))
+            else:
+                shared_list.extend((False, gpu_list[2]))
         except Exception as error:
             msg = "Lora Training Error : {}".format(error)
             print(msg)
-            return msg
+            shared_list.extend((False, msg))
+
+    def run_lora(self, params):
+        manager = Manager()
+        shared_list = manager.list()
+        process = Process(target=self.exe_lora_training,
+                          args=(shared_list, params))
+        process.start()
+        process.join()
+        return shared_list[0], shared_list[1]
 
 
 if __name__ == "__main__":
     start_time = time.time()
-    print(f"Execution time: {time.time() - start_time} seconds")
     params = {
         'run_lora_param': {
             'tokenizer': 'meta-llama/Llama-2-7b-chat-hf',
@@ -156,4 +207,5 @@ if __name__ == "__main__":
             },
         ],
     }
-    FineTuneLLMLora().run_lora(params)
+    print(FineTuneLLMLora().run_lora(params))
+    print(f"Execution time: {time.time() - start_time} seconds")
