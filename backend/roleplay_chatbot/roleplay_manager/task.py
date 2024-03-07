@@ -39,6 +39,7 @@ def fetch_lora_modal_data(user_id, lora_model_id):
                 return 'error'
         except json.JSONDecodeError:
             error_message = 'The dataset is not a valid JSON array.'
+            logger.debug(f"{datetime.now()} :: Dataset invalid for {lora_model}: {error_message}")
             update_lora_training_status(
                 user_id, lora_model_id, 'error', error_message)
             return {'status': 'error', 'message': error_message}

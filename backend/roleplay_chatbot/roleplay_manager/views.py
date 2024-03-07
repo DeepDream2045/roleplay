@@ -621,7 +621,6 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                             "This field cannot be blank during update."
                         ]
                     }}, status=status.HTTP_400_BAD_REQUEST)
-                # tag_list = request_data.pop('tags')[0]
                 tag_list = json.loads(str(tag_list))
                 # Check if tags are provided but blank
                 if not tag_list:
@@ -651,11 +650,12 @@ class CharacterInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                 character_info, data=request_data, partial=True)
 
             if serializer.is_valid():
+                ser = serializer.save()
                 if tag_list:
                     for tag_obj in tag_list:
                         tag = Tag.objects.get(id=tag_obj)
-                        serializer.validated_data['tags'].append(tag)
-                serializer.save()
+                        ser.tags.add(tag)
+
                 return Response({'message': 'character info updated successfully'})
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1820,7 +1820,7 @@ class AdapterChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
             if not message_id:
                 return missing_field_error('message_id')
             queryset = AdapterChatMessage.objects.get(id=message_id)
-            if queryset.user != request.user:
+            if queryset.adapter_chatroom.user != request.user:
                 return Response({'error': "You do not have permission to update this chat."}, status=status.HTTP_403_FORBIDDEN)
             serializer = self.get_serializer(queryset, data=request.data)
             if serializer.is_valid():
@@ -1846,7 +1846,7 @@ class AdapterChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
             if not message_id:
                 return missing_field_error('message_id')
             queryset = AdapterChatMessage.objects.get(id=message_id)
-            if queryset.user != request.user:
+            if queryset.adapter_chatroom.user != request.user:
                 return Response({'error': "You do not have permission to delete this chat."}, status=status.HTTP_403_FORBIDDEN)
             queryset.delete()
             return Response({'message': 'Adapter Chat Message deleted successfully'})

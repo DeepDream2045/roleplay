@@ -31,6 +31,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Creating connection and Join room group"""
 
         try:
+            self.is_adapter = False
             user_id = self.scope['url_route']['kwargs']['id']
             room_id = self.scope['url_route']['kwargs']['room_id']
             # try:

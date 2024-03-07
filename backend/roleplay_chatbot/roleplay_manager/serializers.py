@@ -377,8 +377,7 @@ class CurrentTrainingStatusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LoraTrainingStatus
-        fields = ['id', 'lora_model_info',
-                  'current_status', 'lora_training_error',]
+        fields = ['id', 'current_status', 'lora_training_error',]
 
 
 class LoraAdapterSerializer(serializers.ModelSerializer):
@@ -392,7 +391,7 @@ class LoraAdapterSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoraModelInfo
         fields = ['id', 'created_date', 'modified_date', 'lora_model_name', 'lora_short_bio', 'num_train_epochs', 'per_device_train_batch_size',
-                  'learning_rate', 'warmup_steps', 'optimizer', 'lr_scheduler_type', 'gradient_accumulation_steps', 'lora_alpha',
+                  'learning_rate', 'warmup_steps', 'optimizer', 'lr_scheduler_type', 'gradient_accumulation_steps', 'lora_alpha', 'dataset',
                   'lora_dropout', 'lora_r', 'lora_bias', 'user', 'base_model_id', 'current_status']
         read_only_fields = ['user']
 
