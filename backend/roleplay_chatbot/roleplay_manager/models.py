@@ -167,7 +167,7 @@ class CharacterInfo(models.Model):
     model_id = models.ForeignKey(
         ModelInfo, on_delete=models.CASCADE, related_name='character_model')
     prompt = models.TextField(null=False, blank=False)
-    character_story = models.TextField(null=False, blank=False)
+    character_story = models.TextField(null=True, blank=True)
     character_visibility = models.CharField(
         max_length=10, choices=VISIBILITY_CHOICES, default='unlisted',)
     initial_message = models.TextField(null=True, blank=True)

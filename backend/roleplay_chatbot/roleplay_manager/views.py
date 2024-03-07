@@ -1479,7 +1479,20 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             serializer = self.get_serializer(
                 lora_model_info, data=request.data, partial=True)
             if serializer.is_valid():
-                serializer.save()
+                serializer.save()        
+                """ status update in adapter table=========================="""
+
+                fields_affecting_status = [
+                'dataset', 'num_train_epochs', 'per_device_train_batch_size',
+                'learning_rate', 'warmup_steps', 'optimizer',
+                'lr_scheduler_type', 'gradient_accumulation_steps',
+                'lora_alpha', 'lora_dropout', 'lora_r', 'lora_bias'
+                ]
+                if any(field in request.data for field in fields_affecting_status):
+                    lora_training_status_instance = LoraTrainingStatus.objects.get(lora_model_info=lora_model_info)
+                    lora_training_status_instance.current_status = 'pending'
+                    lora_training_status_instance.lora_training_error = ' '
+                    lora_training_status_instance.save()
 
                 return Response({'message': 'Lora Model info updated successfully'}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
