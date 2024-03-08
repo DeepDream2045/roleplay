@@ -22,9 +22,13 @@ def get_prompt_template(system_prompt, LLM):
 
 
 def create_persona_template(character, character_name):
-    character_attributes = character_name
     system_prompt = f"""Your name is {character.upper()}, You are {character_name["Short_Bio"]}.
-	While answering users question you will adapt below style and being in that character you will answer the user queries.STRICTLY DO NOT INCLUDE the human ACTIONS such as *adjusts sunglasses* ,*winks*,*smirks*,*grins*, *chuckles* and other stage directions or actions in your response.
+	While answering users question you will adapt below style and being in that character you will answer the user queries.
+    STRICTLY DO NOT INCLUDE the human ACTIONS such as *winks*,*smirks*,*grins*,*chuckles*,*nods*,*shrugs*,
+    *raises eyebrows*,*sighs*,*rolls eyes*,*frowns*,*claps*,*thumbs up*,*thumbs down*,*waves*,*points*,*raises hand*,*crosses arms*,
+    *taps foot*,*scratches head*,*facepalms*,*yawns*,*laughs*,*blinks*,*giggles*,*sighs deeply*,*stretches*,*whistles*,*sips drink*,
+    *takes a deep breath*,*snaps fingers*,*flips hair*,*adjusts sunglasses*,*tilts head*,*gestures with hands*,*nods in agreement*,*shakes head in disagreement*,
+    *raises glass for a toast*,*clenches fists*,*bites lip*,*fingers crossed*, and other stage directions or actions in your response.
 	ROLE DESCRIPTION:-
 
 	"""

@@ -9,6 +9,7 @@ from bot.pipeline import *
 from lora_finetune.run_adapter import RunLoraAdapter
 from datetime import datetime
 import logging
+from multiprocessing import Process, Manager
 
 logger = logging.getLogger(__name__)
 
@@ -116,22 +117,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Reconnect after a delay (5 seconds)"""
 
         try:
-            # await self.connect()
-            # Leave room group
             self.channel_layer.group_discard(
                 self.room_group_id,
                 self.channel_name
             )
-            # try:
-            #     gc.collect()
-            #     torch.cuda.empty_cache()
-            # except:
-            #     pass
         except Exception as error:
             print("consumer disconnect error: ", error)
             logger.info(
                 f"{datetime.now()} :: consumer disconnect error :: {error}")
             Response(f"{error} error occurs")
+
+    def run_llm_model(self, character_attribute, sender_user_message):
+        manager = Manager()
+        shared_list = manager.list()
+        process = Process(target=start_model_llama2, args=(
+            character_attribute, sender_user_message, shared_list))
+        process.start()
+        process.join()
+        return shared_list
 
     async def receive(self, text_data):
         """Receive message from WebSocket and send to the group"""
@@ -169,9 +172,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             else:
                 character_attribute = await database_sync_to_async(self.set_character_info)()
-                conversation = start_model_llama2(character_attribute)
-                response = conversation.invoke(sender_user_message)
-                character_message = response["response"].replace("\n\n", "\n")
+                # conversation = start_model_llama2(character_attribute)
+                # response = conversation.invoke(sender_user_message)
+                # character_message = response["response"].replace("\n\n", "\n")
+
+                response = self.run_llm_model(character_attribute, sender_user_message)
+                if response[1]:
+                    character_message = response[0]["response"].replace("\n\n", " ")
+                else:
+                    character_message = response[0]
 
                 if not self.user.is_guest:
                     response_instance = await self.create_msg(self.chat, sender_user_message)

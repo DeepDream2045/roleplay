@@ -1612,7 +1612,7 @@ class UserAllAdapterListView(generics.ListAPIView):
 
 class PublicTrainedAdaptersListView(generics.ListAPIView):
     """API view to list all public adapter details"""
-    permission_classes = [IsAuthenticated, IsValidUser]
+    # permission_classes = [IsAuthenticated, IsValidUser]
     serializer_class = LoraTrainingStatusSerializer
 
     def list(self, request, *args, **kwargs):
@@ -1634,7 +1634,7 @@ class PublicTrainedAdaptersListView(generics.ListAPIView):
 class RunLoraAdapterView(APIView):
     """API view to run lora adapter, lora_model_id and user_text needed to run adapter
     """
-    permission_classes = [IsAuthenticated, IsValidUser]
+    # permission_classes = [IsAuthenticated, IsValidUser]
 
     def post(self, request, *args, **kwargs):
         try:
