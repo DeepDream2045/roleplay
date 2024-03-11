@@ -140,6 +140,14 @@ class ModelInfoSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    def generate_unique_model_location_path(self, model_name):
+        model_name = model_name.strip().replace(" ", "_")
+        unique_name = f"{model_name}_{random.randint(0000, 9999)}"
+        model_location = os.path.join(settings.BASE_MODEL_PATH, unique_name)
+        if not os.path.exists(model_location):
+            os.makedirs(model_location)
+        return model_location
+
     def create(self, validated_data):
         """creating model info object"""
 
@@ -152,6 +160,10 @@ class ModelInfoSerializer(serializers.ModelSerializer):
                     'This field is required'
                 ]
             })
+
+        # Add the output_dir to the validated_data
+        validated_data['model_location'] = self.generate_unique_model_location_path(
+            validated_data['model_name'])
         model_info_instance = ModelInfo.objects.create(**validated_data)
         return model_info_instance
 

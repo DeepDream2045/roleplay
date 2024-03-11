@@ -402,6 +402,11 @@ class ModelInfoAPIView(generics.ListCreateAPIView, generics.RetrieveUpdateDestro
         """
 
         try:
+            restricted_fields = [
+                'huggingFace_model_name', 'model_location', 'user']
+            for field in restricted_fields:
+                if field in request.data:
+                    return Response({'error': f'Updating {field} is not allowed.'}, status=status.HTTP_400_BAD_REQUEST)
             id = request.data.get('id', None)
             if not id:
                 return missing_field_error('id')
@@ -1479,17 +1484,16 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
             serializer = self.get_serializer(
                 lora_model_info, data=request.data, partial=True)
             if serializer.is_valid():
-                serializer.save()        
-                """ status update in adapter table=========================="""
-
+                serializer.save()
                 fields_affecting_status = [
-                'dataset', 'num_train_epochs', 'per_device_train_batch_size',
-                'learning_rate', 'warmup_steps', 'optimizer',
-                'lr_scheduler_type', 'gradient_accumulation_steps',
-                'lora_alpha', 'lora_dropout', 'lora_r', 'lora_bias'
+                    'dataset', 'num_train_epochs', 'per_device_train_batch_size',
+                    'learning_rate', 'warmup_steps', 'optimizer',
+                    'lr_scheduler_type', 'gradient_accumulation_steps',
+                    'lora_alpha', 'lora_dropout', 'lora_r', 'lora_bias'
                 ]
                 if any(field in request.data for field in fields_affecting_status):
-                    lora_training_status_instance = LoraTrainingStatus.objects.get(lora_model_info=lora_model_info)
+                    lora_training_status_instance = LoraTrainingStatus.objects.get(
+                        lora_model_info=lora_model_info)
                     lora_training_status_instance.current_status = 'pending'
                     lora_training_status_instance.lora_training_error = ' '
                     lora_training_status_instance.save()
@@ -1648,12 +1652,12 @@ class RunLoraAdapterView(APIView):
 
             lora_model = LoraModelInfo.objects.get(id=lora_model_id)
             if not lora_model:
-                return Response({'error': 'Lora Adapter not found'}, status=status.HTTP_404_NOT_FOUND)
+                return Response({'error': 'This Adapter is no longer available. Please choose another one.'}, status=status.HTTP_404_NOT_FOUND)
             model_info = ModelInfo.objects.get(id=lora_model.base_model_id.id)
             run_lora_adapter_data = {
                 'model_param': {
-                    'tokenizer': model_info.model_name,
-                    'base_model': model_info.model_name,
+                    'tokenizer': model_info.huggingFace_model_name,
+                    'base_model': model_info.huggingFace_model_name,
                     'cache_dir': model_info.model_location,
                     'token': settings.HF_TOKEN,
                 },

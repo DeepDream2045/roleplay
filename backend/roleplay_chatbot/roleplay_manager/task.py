@@ -57,8 +57,8 @@ def fetch_lora_modal_data(user_id, lora_model_id):
         """Data format"""
         lora_modal_data = {
             'run_lora_param': {
-                'tokenizer': model_info.model_name,
-                'base_model': model_info.model_name,
+                'tokenizer': model_info.huggingFace_model_name,
+                'base_model': model_info.huggingFace_model_name,
                 'cache_dir': model_info.model_location,
                 'token': settings.HF_TOKEN,
             },

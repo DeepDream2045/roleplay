@@ -16,21 +16,22 @@ gc.collect()
 load_dotenv(".env")
 
 
-def create_model_config():
+def create_model_config(model_info):
     model_params = {
         'model_id': MODEL_ID,
         'cache_dir': MODELS_PATH,
         'max_new_tokens': MAX_NEW_TOKENS,
         'hf_token': HF_TOKEN,
         'gpu_list': '',
-        # '':'',
     }
+    if model_info is not None:
+        model_params.update(model_info)
     return model_params
 
 
-def start_model_llama2(custom_character_attribute, sender_user_message=None, shared_list=None):
+def start_model_llama2(custom_character_attribute, sender_user_message=None, model_info=None, shared_list=None):
     try:
-        model_params = create_model_config()
+        model_params = create_model_config(model_info)
         model_params['gpu_list'] = get_GPU_Info(18, 'chat', [3, 4, 5])
     except:
         model_params['gpu_list'] = [True, {3: "18GB", }, ""]
@@ -46,11 +47,11 @@ def start_model_llama2(custom_character_attribute, sender_user_message=None, sha
 
         if sender_user_message is not None:
             response = conversation.invoke(sender_user_message)
-            shared_list.extent(response, True)
+            shared_list.extend((response, True))
         else:
             return conversation
     else:
-        return shared_list.extent(model_params['gpu_list'][2], False)
+        return shared_list.extend((model_params['gpu_list'][2], False))
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         self.user = None
         self.character = None
+        self.model = None
         self.room_group_id = None
         self.chat = None
         self.is_adapter = False
@@ -69,6 +70,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         user=self.user, room_id=room_id)
                     self.character = CharacterInfo.objects.filter(
                         id=self.chat.character.id).first()
+                    self.model = ModelInfo.objects.get(id=self.character.model_id.id)
                 self.room_group_id = self.chat.room_id
                 return True
         except Exception as error:
@@ -90,7 +92,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             for i in character_attribute_list:
                 custom_character_attribute[i.split(":")[0]] = i.split(":")[1]
             print(custom_character_attribute)
-            return custom_character_attribute
+            model_info = {}
+            model_info['model_id'] = self.model.huggingFace_model_name
+            model_info['cache_dir'] = self.model.model_location
+            model_info['prompt_template'] = self.model.prompt_template
+            return custom_character_attribute, model_info
         except Exception as error:
             print("consumer set_character_info error: ", error)
             logger.info(
@@ -127,11 +133,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 f"{datetime.now()} :: consumer disconnect error :: {error}")
             Response(f"{error} error occurs")
 
-    def run_llm_model(self, character_attribute, sender_user_message):
+    def run_llm_model(self, character_attribute, sender_user_message, model_info):
         manager = Manager()
         shared_list = manager.list()
         process = Process(target=start_model_llama2, args=(
-            character_attribute, sender_user_message, shared_list))
+            character_attribute, sender_user_message, model_info, shared_list))
         process.start()
         process.join()
         return shared_list
@@ -171,12 +177,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 })
 
             else:
-                character_attribute = await database_sync_to_async(self.set_character_info)()
+                character_attribute, model_info = await database_sync_to_async(self.set_character_info)()
                 # conversation = start_model_llama2(character_attribute)
                 # response = conversation.invoke(sender_user_message)
                 # character_message = response["response"].replace("\n\n", "\n")
 
-                response = self.run_llm_model(character_attribute, sender_user_message)
+                response = self.run_llm_model(character_attribute, sender_user_message, model_info)
                 if response[1]:
                     character_message = response[0]["response"].replace("\n\n", " ")
                 else:
