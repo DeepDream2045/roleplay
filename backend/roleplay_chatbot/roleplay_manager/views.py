@@ -1505,11 +1505,12 @@ class LoraModalInfoView(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
                     'lora_alpha', 'lora_dropout', 'lora_r', 'lora_bias'
                 ]
                 if any(field in request.data for field in fields_affecting_status):
-                    lora_training_status_instance = LoraTrainingStatus.objects.get(
-                        lora_model_info=lora_model_info)
-                    lora_training_status_instance.current_status = 'pending'
-                    lora_training_status_instance.lora_training_error = ' '
-                    lora_training_status_instance.save()
+                    if LoraTrainingStatus.objects.filter( lora_model_info=lora_model_info).exists():
+                        lora_training_status_instance = LoraTrainingStatus.objects.get(
+                            lora_model_info=lora_model_info)
+                        lora_training_status_instance.current_status = 'pending'
+                        lora_training_status_instance.lora_training_error = ' '
+                        lora_training_status_instance.save()
 
                 return Response({'message': 'Lora Model info updated successfully'}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1936,12 +1937,9 @@ class MetaMaskTransactionView(generics.ListCreateAPIView, generics.DestroyAPIVie
                 return Response({'message': 'MetaMask Transaction info deleted successfully'}, status=status.HTTP_200_OK)
             else:
                 # Delete all transaction details related to the user
-                queryset = MetaMaskTransactionHistory.objects.filter(
-                    user=request.user)
+                queryset = MetaMaskTransactionHistory.objects.filter( user=request.user)
                 if not queryset.exists():
                     return Response({'error': 'No transaction details found'}, status=status.HTTP_404_NOT_FOUND)
-                if queryset.user != request.user:
-                    return Response({'error': "You do not have permission to delete this transaction details."}, status=status.HTTP_403_FORBIDDEN)
                 queryset.delete()
                 return Response({'message': 'All MetaMask Transaction info deleted successfully'}, status=status.HTTP_200_OK)
         except MetaMaskTransactionHistory.DoesNotExist:

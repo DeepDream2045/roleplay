@@ -584,8 +584,3 @@ class MetaMaskTransactionSerializer(serializers.ModelSerializer):
         transaction_instance = MetaMaskTransactionHistory.objects.create(**validated_data)
 
         return transaction_instance
-
-class MetamaskLoginSerializer(serializers.Serializer):
-    """ Metamask Login serializer """
-    web3_address = serializers.CharField(label='web3_address', required=True)
-    # password = serializers.CharField(label='Password', required=True)
