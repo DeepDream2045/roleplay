@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import (CustomUser, ChatRoom, ChatMessage, TokenRequest,
-                     Tag, CharacterInfo, ModelInfo, Feedback, LoraModelInfo, LoraTrainingStatus, AdapterChatRoom, AdapterChatMessage)
+from .models import *
 
 # Register your models here.
 
@@ -63,6 +62,7 @@ class LoraModelValuesAdmin(admin.ModelAdmin):
     list_display = ['id', 'lora_model_name', 'user', 'lora_short_bio',
                     'base_model_id', 'tuned_model_path']
 
+
 class LoraTrainingStatusAdmin(admin.ModelAdmin):
     list_display = ['id', 'lora_model_info', 'user', 'current_status',
                     'lora_training_error']
@@ -82,6 +82,19 @@ class AdapterChatMessageAdmin(admin.ModelAdmin):
                     'user_message', 'adapter_message']
 
 
+class MetaMaskTransactionHistoryAdmin(admin.ModelAdmin):
+    """Create MetaMaskTransactionHistory for display on admin panel"""
+
+    list_display = ['id', 'sender',
+                    'receiver', 'amount', 'status', 'transaction_hash']
+
+
+class UserCaptchaAdmin(admin.ModelAdmin):
+    """Create MetaMask get captcha for display on admin panel"""
+
+    list_display = ['id', 'captcha', 'user']
+
+
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(ChatRoom, ChatRoomAdmin)
 admin.site.register(ChatMessage, ChatMessageAdmin)
@@ -94,3 +107,6 @@ admin.site.register(LoraModelInfo, LoraModelValuesAdmin)
 admin.site.register(LoraTrainingStatus, LoraTrainingStatusAdmin)
 admin.site.register(AdapterChatRoom, AdapterChatRoomAdmin)
 admin.site.register(AdapterChatMessage, AdapterChatMessageAdmin)
+admin.site.register(MetaMaskTransactionHistory,
+                    MetaMaskTransactionHistoryAdmin)
+admin.site.register(UserCaptcha, UserCaptchaAdmin)

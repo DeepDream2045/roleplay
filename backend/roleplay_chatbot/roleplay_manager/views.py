@@ -23,8 +23,21 @@ from django.db.models import Q
 from django.http import Http404
 from roleplay_manager.task import fetch_lora_modal_data
 from lora_finetune.run_adapter import RunLoraAdapter
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+import configparser
+import random
+from eth_account.messages import encode_defunct
+from web3.auto import w3
+
 
 logger = logging.getLogger(__name__)
+sys_random = random.SystemRandom()
+
+
+def get_random_string(k=35):
+    letters = "abcdefghiklmnopqrstuvwwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+    return ''.join(sys_random.choices(letters, k=k))
 
 
 def missing_field_error(field_name):
@@ -144,8 +157,8 @@ class LogoutView(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'errors': serializer.errors}, status=status.HTTP_204_NO_CONTENT)
+            return Response(status=status.HTTP_200_OK)
+        return Response({'errors': serializer.errors}, status=status.HTTP_200_OK)
 
 
 class ForgetPassword(APIView):
@@ -1874,3 +1887,161 @@ class AdapterChatMessageView(generics.RetrieveUpdateDestroyAPIView, APIView):
             logger.info(
                 f"{datetime.now()} :: AdapterChatMessageView delete error :: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MetaMaskTransactionView(generics.ListCreateAPIView, generics.DestroyAPIView):
+    """View for user's metamask transaction details"""
+    permission_classes = [IsAuthenticated, IsValidUser]
+    serializer_class = MetaMaskTransactionSerializer
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        context = super().get_serializer_context()
+        context.update({
+            "user": self.request.user
+        })
+        return context
+
+    def list(self, request, *args, **kwargs):
+        """ list user's metamask transaction details"""
+        try:
+            queryset = MetaMaskTransactionHistory.objects.filter(
+                user=request.user)
+            if not queryset.exists():
+                return Response({'error': 'No transaction details found'}, status=status.HTTP_404_NOT_FOUND)
+            serializer = MetaMaskTransactionSerializer(queryset, many=True)
+            return Response({'message': 'success', 'data': serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(
+                f"{datetime.now()} :: MetaMaskTransactionView list error :: {e}")
+            return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, *args, **kwargs):
+        """ 
+        delete metamask transaction details by ID or all related to the user
+        """
+        try:
+            id = request.data.get('id', None)
+            if id:
+                # Delete transaction detail by ID if provided
+                transaction_info = MetaMaskTransactionHistory.objects.get(
+                    id=id)
+
+                # Check if the user has permission to delete the detail
+                if transaction_info.user != request.user:
+                    return Response({'error': "You do not have permission to delete this transaction detail."}, status=status.HTTP_403_FORBIDDEN)
+                transaction_info.delete()
+                return Response({'message': 'MetaMask Transaction info deleted successfully'}, status=status.HTTP_200_OK)
+            else:
+                # Delete all transaction details related to the user
+                queryset = MetaMaskTransactionHistory.objects.filter(
+                    user=request.user)
+                if not queryset.exists():
+                    return Response({'error': 'No transaction details found'}, status=status.HTTP_404_NOT_FOUND)
+                if queryset.user != request.user:
+                    return Response({'error': "You do not have permission to delete this transaction details."}, status=status.HTTP_403_FORBIDDEN)
+                queryset.delete()
+                return Response({'message': 'All MetaMask Transaction info deleted successfully'}, status=status.HTTP_200_OK)
+        except MetaMaskTransactionHistory.DoesNotExist:
+            return Response({'error': 'MetaMask Transaction info not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(
+                f"{datetime.now()} :: MetaMaskTransactionView delete error :: {e}")
+            return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# get_captcha
+
+
+class UserCaptchaView(APIView):
+    """API view to generate and retrieve user captcha."""
+
+    address_param = openapi.Parameter('web3_address', openapi.IN_QUERY,
+                                      description="web3 address", type=openapi.TYPE_STRING, required=True)
+
+    @swagger_auto_schema(manual_parameters=[address_param])
+    def post(self, request, *args, **kwargs):
+        try:
+            content = {}
+            # get the address from params
+            address = request.data.get('web3_address')
+            if address is None or not address.strip():  # Check if address is empty or contains only whitespace
+                return missing_field_error('web3_address')
+            try:
+                # Try to retrieve the user if it exists
+                user_obj = CustomUser.objects.get(web3_address=address)
+            except CustomUser.DoesNotExist:
+                # If the user does not exist, create one
+                email = f'metamask{get_random_string(3)}@mail.com'
+                user_obj = CustomUser.objects.create(
+                    email=email, web3_address=address)
+
+            # delete all the old captchas of this user
+            UserCaptcha.objects.filter(user=user_obj).delete()
+            # create a new captcha
+            captcha = get_random_string()
+            # assign it
+            user_captcha_obj = UserCaptcha(
+                captcha=captcha,
+                user=user_obj
+            )
+            user_captcha_obj.save()
+
+            content["data"] = {"captcha": user_captcha_obj.captcha}
+            content["message"] = "successfully executed!"
+            return Response(content, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(
+                f"{datetime.now()} :: UserCaptchaView error :: {e}")
+            return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MetamaskLoginView(APIView):
+    """Metamask login view"""
+
+    def post(self, request):
+        """Handle Metamask login"""
+
+        data = request.data
+        if data.get('web3_address') is None or not data['web3_address'].strip():
+            return missing_field_error('web3_address')
+
+        if data.get('signature') is None or not data['signature'].strip():
+            return missing_field_error('signature')
+        print(data["signature"], data["web3_address"])
+        try:
+            # Check if user exists
+            if CustomUser.objects.filter(web3_address=data["web3_address"]).exists():
+                user = CustomUser.objects.get(
+                    web3_address=data["web3_address"])
+
+                # Get the captcha from the database
+                if UserCaptcha.objects.filter(user=user).exists():
+                    captcha = UserCaptcha.objects.get(user=user)
+                    message = encode_defunct(text=captcha.captcha)
+
+                    # Derive public key using the provided signature and captcha
+                    pub2 = w3.eth.account.recover_message(
+                        message, signature=data["signature"])
+
+                    # Check if public key matches the user's Metamask address
+                    if user.web3_address == pub2:
+                        user.web3_address = data["web3_address"]
+                        user.is_active = True
+                        user.save()
+                        serializer = CustomUserSerializer(user)
+                        refresh = RefreshToken.for_user(user)
+                        return Response({'message': 'success', 'data': serializer.data,
+                                        'refresh': str(refresh), 'access': str(refresh.access_token)}, status=status.HTTP_200_OK, )
+                    else:
+                        return Response({'error': 'Public key does not match the Metamask address.'}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'error': 'Captcha not found for the user.'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error': 'User not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(
+                f"{datetime.now()} :: MetamaskLoginView post error :: {e}")
+            return Response({'error': 'An unexpected error occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

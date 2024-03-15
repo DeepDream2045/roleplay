@@ -140,6 +140,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             character_attribute, sender_user_message, model_info, shared_list))
         process.start()
         process.join()
+        logger.info(shared_list)
         return shared_list
 
     async def receive(self, text_data):

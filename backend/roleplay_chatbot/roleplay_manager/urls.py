@@ -27,6 +27,11 @@ urlpatterns = [
     path('login_verify/', views.MagicLoginVerifyView.as_view(),
          name='magic_login_verify'),
 
+    path('get_user_captcha/', views.UserCaptchaView.as_view(), name="get_user_captcha"),
+    path('metamask_login/', views.MetamaskLoginView.as_view(), name="metamask_login"),
+    path('metamask_transactions/', views.MetaMaskTransactionView.as_view(),
+         name='metamask_transactions'),
+
     path('model_info/', views.ModelInfoAPIView.as_view(), name='model_info'),
     path('user_models_list/',
          views.GetUserCreatedModals.as_view(), name='GetUserCreatedModals'),
@@ -70,8 +75,5 @@ urlpatterns = [
          name='adapter_room_info'),
     path('adapter_chat_message/', views.AdapterChatMessageView.as_view(),
          name='adapter_chat_message'),
-
-    #     path('get_lora_adapters_status_by_id/', views.CurrentLoraModalStatusView.as_view(),
-    #              name='get_lora_adapters_status_by_id'),
 
 ]

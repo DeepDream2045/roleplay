@@ -563,3 +563,29 @@ class LoraTrainingStatusSerializer(serializers.ModelSerializer):
             representation['lora_model_info'] = None
 
         return representation
+
+
+class MetaMaskTransactionSerializer(serializers.ModelSerializer):
+    """Serializer for user's metamask transactions details"""
+
+    class Meta:
+        model = MetaMaskTransactionHistory
+        fields = '__all__'
+        read_only_fields = ('user',)
+
+    def validate(self, attrs):
+        attrs['user'] = self.context["user"]
+        return attrs
+    
+    def create(self, validated_data):
+        """Creating a new MetaMaskTransactionHistory instance"""
+        user = self.context.get('user')
+        validated_data['user'] = user
+        transaction_instance = MetaMaskTransactionHistory.objects.create(**validated_data)
+
+        return transaction_instance
+
+class MetamaskLoginSerializer(serializers.Serializer):
+    """ Metamask Login serializer """
+    web3_address = serializers.CharField(label='web3_address', required=True)
+    # password = serializers.CharField(label='Password', required=True)

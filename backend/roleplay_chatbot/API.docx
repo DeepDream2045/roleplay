@@ -964,7 +964,7 @@ Response:
         "modified_date": "2024-02-23T13:27:29.149338Z",
         "lora_model_name": "test_lora34",
         "lora_short_bio": "test_lora",
-        "dataset_path": "test_lora",
+        "dataset": "[\n   {\n      \"context\":\"What's your favorite hobby?\",\n      \"response\":\"I'm passionate about entrepreneurship, technology, and space exploration. How about you?\"\n   },\n   {\n      \"context\":\"Can you tell me more about yourself?\",\n      \"response\":\"Sure! I'm Elon Musk, CEO of SpaceX and Tesla, among other ventures. I'm focused on pioneering electric vehicles, space exploration, and renewable energy.\"\n   }]"
         "num_train_epochs": 1,
         "per_device_train_batch_size": 1,
         "learning_rate": 0.0002,
@@ -982,14 +982,23 @@ Response:
 ]
 
 ----------------------------------------------------------
-Note:- This API endpoint is used to create modals. In this lora_model_name, lora_short_bio, dataset, base_model_id are the necessary fields to create lora modals
+Note:- This API endpoint is used to create modals. In this lora_model_name, lora_short_bio, dataset, base_model_id are the required fields to create lora modals, and name must be unique.
 
 Request Method: Post
 Request Body:
 {
         "lora_model_name": "test_lora34",
         "lora_short_bio": "test_lora",
-        "dataset": "test_lora",
+        "dataset": "[
+                        {
+                            "context":"What's your favorite hobby?",
+                            "response":"I'm passionate about entrepreneurship, technology, and space exploration. How about you?"
+                        },
+                        {
+                            "context":"Can you tell me more about yourself?",
+                            "response":"Sure! I'm Elon Musk, CEO of SpaceX and Tesla, among other ventures. I'm focused on pioneering electric vehicles, space exploration, and renewable energy."
+                        }
+                    ]",
         "num_train_epochs": 1,
         "per_device_train_batch_size": 1,
         "learning_rate": 0.0002,
@@ -1001,7 +1010,7 @@ Request Body:
         "lora_dropout": 0.05,
         "lora_r": 8,
         "lora_bias": "none",
-        "base_model_id": 2,
+        "base_model_id": 1,
 }
 
 Response:
@@ -1011,8 +1020,7 @@ Response:
     "modified_date": "2024-02-23T13:31:30.484005Z",
     "lora_model_name": "test_lora",
     "lora_short_bio": "test_lora",
-    "dataset_path": "test_lora",
-    "tuned_model_path": "test_lora",
+    "dataset": "[\n   {\n      \"context\":\"What's your favorite hobby?\",\n      \"response\":\"I'm passionate about entrepreneurship, technology, and space exploration. How about you?\"\n   },\n   {\n      \"context\":\"Can you tell me more about yourself?\",\n      \"response\":\"Sure! I'm Elon Musk, CEO of SpaceX and Tesla, among other ventures. I'm focused on pioneering electric vehicles, space exploration, and renewable energy.\"\n   }]"
     "num_train_epochs": 1,
     "per_device_train_batch_size": 1,
     "learning_rate": 0.0002,
@@ -1028,16 +1036,45 @@ Response:
     "user": 1
 }
 
+{
+    "id": 44,
+    "created_date": "2024-03-05T07:32:41.582833Z",
+    "modified_date": "2024-03-05T07:32:41.592141Z",
+    "lora_model_name": "testing lora response3",
+    "lora_short_bio": "test_lora",
+    "dataset": "[\n   {\n      \"context\":\"What's your favorite hobby?\",\n      \"response\":\"I'm passionate about entrepreneurship, technology, and space exploration. How about you?\"\n   },\n   {\n      \"context\":\"Can you tell me more about yourself?\",\n      \"response\":\"Sure! I'm Elon Musk, CEO of SpaceX and Tesla, among other ventures. I'm focused on pioneering electric vehicles, space exploration, and renewable energy.\"\n   }]",
+    "base_model_id": 1,
+    "num_train_epochs": 1,
+    "per_device_train_batch_size": 1,
+    "learning_rate": 0.0002,
+    "warmup_steps": 0,
+    "optimizer": "paged_adamw_8bit",
+    "lr_scheduler_type": "constant",
+    "gradient_accumulation_steps": 1,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "lora_r": 8,
+    "lora_bias": "none",
+    "user": {
+        "id": 2,
+        "full_name": "tset",
+        "username": "test",
+        "profile_image": null
+    },
+    "base_model_data": {
+        "id": 1,
+        "model_name": "modal2",
+        "short_bio": "test"
+    }
+}
+
 ----------------------------------------------------------
-Note:- This API endpoint is used to update modal values , which fields you want to update.
+Note:- This API endpoint is used to update modal values in this you can't update lora_model_name and base_model_id
 Request Method: PUT
 Request Body:
 {
     "id": 3,
-    "lora_model_name": "test_lora",
     "lora_short_bio": "test_lora",
-    "dataset_path": "test_lora",
-    "tuned_model_path": "test_lora",
     "num_train_epochs": 1,
 }
 
@@ -1110,32 +1147,76 @@ Request Headers:
 Request Method: GET
 Note:- This will list all lora adapters(requested user only) which are initiated for training with all status pending, error, completed
 Response:
-[
-    {
-        "id": 38,
-        "created_date": "2024-02-29T08:34:14.809613Z",
-        "modified_date": "2024-02-29T08:45:50.118600Z",
-        "current_status": "completed",
-        "lora_training_error": "no error error",
-        "user": 2,
-        "lora_model_info": 20
-    },
-    {
-        "id": 35,
-        "created_date": "2024-02-29T07:16:26.362638Z",
-        "modified_date": "2024-02-29T07:16:26.432309Z",
-        "current_status": "completed",
-        "lora_training_error": no error found,
-        "user": 2,
-        "lora_model_info": 17
-    }
+{
+    "message": "success",
+    "data": [
+        {
+            "id": 2,
+            "created_date": "2024-03-01T16:04:26.949405Z",
+            "modified_date": "2024-03-04T12:56:39.175949Z",
+            "current_status": "completed",
+            "lora_training_error": "no error found",
+            "lora_model_info": {
+                "id": 8,
+                "created_date": "2024-03-01T16:04:10.110564Z",
+                "modified_date": "2024-03-01T16:04:10.110586Z",
+                "lora_model_name": "Lora train 2",
+                "lora_short_bio": "test_lora",
+                "num_train_epochs": 1,
+                "per_device_train_batch_size": 1,
+                "learning_rate": 0.0002,
+                "warmup_steps": 0,
+                "optimizer": "paged_adamw_8bit",
+                "lr_scheduler_type": "constant",
+                "gradient_accumulation_steps": 1,
+                "lora_alpha": 32,
+                "lora_dropout": 0.05,
+                "lora_r": 8,
+                "lora_bias": "none",
+                "base_model_id": 1,
+                "user": 2
+            },
+            "user": {
+                "id": 2,
+                "full_name": "test",
+                "username": "test5690246",
+                "profile_image": "/media/image/profile/imagesssss.jpeg"
+            }
+        },
+        {
+            "id": 4,
+            "created_date": "2024-03-04T12:59:41.293399Z",
+            "modified_date": "2024-03-04T12:59:57.397712Z",
+            "current_status": "completed",
+            "lora_training_error": "no error found",
+            "lora_model_info": {
+                "id": 7,
+                "created_date": "2024-03-01T16:00:09.191069Z",
+                "modified_date": "2024-03-01T16:00:09.191104Z",
+                "lora_model_name": "Lora train 1",
+                "lora_short_bio": "test_lora",
+                "num_train_epochs": 1,
+                "per_device_train_batch_size": 1,
+                "learning_rate": 0.0002,
+                "warmup_steps": 0,
+                "optimizer": "paged_adamw_8bit",
+                "lr_scheduler_type": "constant",
+                "gradient_accumulation_steps": 1,
+                "lora_alpha": 32,
+                "lora_dropout": 0.05,
+                "lora_r": 8,
+                "lora_bias": "none",
+                "base_model_id": 1,
+                "user": 2
+            },
+        }
 ]
-
+}
 ##############################################################################
 
 For list of all Trained lora adapters Info APIs
 
-Request URL: http://localhost:8000/lora_adapters_list/
+Request URL: http://localhost:8000/public_lora_adapters/
 
 Request Headers:
     Authorization: Bearer access_token
@@ -1143,28 +1224,365 @@ Request Headers:
 
 ----------------------------------------------------------
 Request Method: GET
-Note:- This will list all trained lora adapters(requested user only) with status completed
+Note:- This will list all public trained lora adapters 
 Response:
-[
-    {
-        "id": 38,
-        "created_date": "2024-02-29T08:34:14.809613Z",
-        "modified_date": "2024-02-29T08:45:50.118600Z",
-        "current_status": "completed",
-        "lora_training_error": "no error found",
-        "user": 2,
-        "lora_model_info": 20
-    },
-    {
-        "id": 35,
-        "created_date": "2024-02-29T07:16:26.362638Z",
-        "modified_date": "2024-02-29T07:16:26.432309Z",
-        "current_status": "completed",
-        "lora_training_error": no error found,
-        "user": 2,
-        "lora_model_info": 17
-    }
+{
+    "message": "success",
+    "data": [
+        {
+            "id": 11,
+            "created_date": "2024-03-05T10:14:19.550191Z",
+            "modified_date": "2024-03-05T14:51:52.493173Z",
+            "current_status": "completed",
+            "lora_training_error": "no error found",
+            "lora_model_info": {
+                "id": 15,
+                "created_date": "2024-03-05T10:14:13.194607Z",
+                "modified_date": "2024-03-05T10:14:13.194627Z",
+                "lora_model_name": "OpenHermesLoraTest",
+                "lora_short_bio": "Lora Model trained on OpenHermes huggingface dataset",
+                "num_train_epochs": 5,
+                "per_device_train_batch_size": 2,
+                "learning_rate": 0.0002,
+                "warmup_steps": 10,
+                "optimizer": "adamw_torch",
+                "lr_scheduler_type": "constant",
+                "gradient_accumulation_steps": 1,
+                "lora_alpha": 32,
+                "lora_dropout": 0.05,
+                "lora_r": 8,
+                "lora_bias": "none",
+                "base_model_id": 1,
+                "user": 17
+            },
+            "user": {
+                "id": 17,
+                "full_name": "Vieira",
+                "username": "viira",
+                "profile_image": null
+            }
+        },
+        {
+            "id": 2,
+            "created_date": "2024-03-01T16:04:26.949405Z",
+            "modified_date": "2024-03-04T12:56:39.175949Z",
+            "current_status": "completed",
+            "lora_training_error": "no error found",
+            "lora_model_info": {
+                "id": 8,
+                "created_date": "2024-03-01T16:04:10.110564Z",
+                "modified_date": "2024-03-01T16:04:10.110586Z",
+                "lora_model_name": "Lora train 2",
+                "lora_short_bio": "test_lora",
+                "num_train_epochs": 1,
+                "per_device_train_batch_size": 1,
+                "learning_rate": 0.0002,
+                "warmup_steps": 0,
+                "optimizer": "paged_adamw_8bit",
+                "lr_scheduler_type": "constant",
+                "gradient_accumulation_steps": 1,
+                "lora_alpha": 32,
+                "lora_dropout": 0.05,
+                "lora_r": 8,
+                "lora_bias": "none",
+                "base_model_id": 1,
+                "user": 2
+            },
+            "user": {
+                "id": 2,
+                "full_name": "test",
+                "username": "test5690246",
+                "profile_image": "/media/image/profile/imagesssss.jpeg"
+            }
+        },
 ]
+}
+##############################################################################
+
+For run lora adapters Info APIs
+
+Request URL: http://localhost:8000/run_lora_adapters/
+
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: POST
+request data:
+{  
+    "lora_model_id":"41",
+    "user_text":"Hii, How are you?"
+}
+
+Response:
+{'message': "🎨🏋️\u200d♀️📚\n everybody has their own unique hobbies and interests, and that's what makes the world a more interesting place! So, tell me, what do you enjoy doing in your free time"}
 
 ##############################################################################
 
+##############################################################################
+For Adapter Room Info APIs
+Request URL: http://127.0.0.1:8000/adapter_room_info/
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: GET
+(Note:- It provides information about the adapter room along with the chat messages linked to it.)
+Response:
+{
+    "message": "success",
+    "data": [
+        {
+            "adapter_room_id": "4fibCxcX2tM3vSAFhhQREY",
+            "type": 1,
+            "group_name": "Lora 678",
+            "user": {
+                "id": 5,
+                "full_name": "john",
+                "username": "john",
+                "profile_image": null
+            },
+            "adapter": {
+                "id": 42,
+                "lora_model_name": "Lora 678",
+                "lora_short_bio": "test_lora",
+                "base_model_id": 1,
+                "user": 2
+            }
+        }
+    ]
+}
+
+Request Method: Post
+Request Body:
+{
+    "adapter": 42
+}
+
+Response:
+{
+    "message": "success",
+    "data": {
+        "adapter_room_id": "4fibCxcX2tM3vSAFhhQREY",
+        "type": 1,
+        "group_name": "Lora 678",
+        "user": {
+            "id": 5,
+            "full_name": "john",
+            "username": "john",
+            "profile_image": null
+        },
+        "adapter": {
+            "id": 42,
+            "lora_model_name": "Lora 678",
+            "lora_short_bio": "test_lora",
+            "base_model_id": 1,
+            "user": 2
+        }
+    }
+}
+--------------------------------------------
+Request Method: Put
+Request Body:
+{
+    "adapter_room_id":"jBvHed2DuqBw5cafiFjW7C",
+    "group_name":"testing lora adapter2" 
+}
+
+
+{
+    "message": "Adapter Room info updated successfully"
+}
+
+Request Method: delete
+Request Body:
+{
+    "adapter_room_id":"RkdNsDVzXDuiwWLukrwK2P"
+}
+
+
+Response:
+{
+    "message": "Adapter Room info deleted successfully"
+}
+
+##############################################################################
+For Chat Message APIs
+Request URL: http://127.0.0.1:8000/adapter_chat_message/
+
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: Post
+Request Body:
+{
+    "room_id": "E586dK5joxqfrhw5sLTKVH"
+}
+
+Response:
+{
+    "message": "success",
+    "data": {
+        "id": 1,
+        "created_date": "2024-03-05T14:24:16.258813Z",
+        "modified_date": "2024-03-05T14:24:16.258832Z",
+        "user_message": "hii how are you lora",
+        "adapter_message": "hii i am working fine",
+        "is_edited": false,
+        "adapter_chatroom": 1
+    }
+}
+
+Request Method: Put
+Note:- You can update chat message in this with message id
+Request Body:
+{
+    "message_id": 5,
+    "character_message": "I am good"
+}
+
+Response:
+{
+    "message": "Adapter Chat Message update successfully"
+}
+
+Request Method: delete
+Request Body:
+{
+    "message_id": 5,
+}
+
+Response:
+{
+    "message": "Adapter Chat Message deleted successfully"
+}
+
+
+##############################################################################
+
+For MetaMask Transaction History Info APIs
+Request URL: http://127.0.0.1:8000/metamask_transactions/
+Request Headers:
+    Authorization: Bearer access_token
+    user-refresh-token: refresh_token
+
+----------------------------------------------------------
+Request Method: GET
+(Note:- It provides list about the metamask transactions made by users:)
+Response:
+{
+    "message": "success",
+    "data": [
+        {
+            "id": 6,
+            "created_date": "2024-03-13T07:38:40.123219Z",
+            "modified_date": "2024-03-13T07:38:40.123242Z",
+            "sender": "sender address",
+            "receiver": "receiver address",
+            "amount": "0.00",
+            "status": "",
+            "transaction_hash": "transaction_hash data",
+            "method": "",
+            "user": 5
+        },
+    ]
+}
+-------------------------------------
+Request Method: Post
+Request Body:
+{
+    "sender" :"sender address",
+    "receiver":"receiver address",
+    "amount" :"90",
+    "status" :"completed",
+    "transaction_hash" :"transaction_hash data",
+    "method" :"transaction method"
+}
+Response:
+{
+    "id": 9,
+    "created_date": "2024-03-14T10:47:32.509390Z",
+    "modified_date": "2024-03-14T10:47:32.509414Z",
+    "sender": "sender address",
+    "receiver": "receiver address",
+    "amount": "90.00",
+    "status": "completed",
+    "transaction_hash": null,
+    "method": "",
+    "user": 5
+}
+--------------------------------------------
+
+Request Method: delete
+Note:- If user want to delete by ID, then send ID in request body
+Request Body:
+{
+    "id":5
+}
+
+Response:
+{
+    "message": "MetaMask Transaction info deleted successfully"
+}
+-----------------------------------------
+Request Method: delete
+Note:- If user want to delete all transaction, then hit this api without parameters. This will delete all transactions history
+Request Body:
+none
+
+Response:
+{
+    "message": "All MetaMask Transaction info deleted successfully"
+}
+
+##############################################################################
+
+For MetaMask Login Info APIs
+
+Request URL: http://127.0.0.1:8000/get_user_captcha/
+
+----------------------------------------------------------
+Request Method: Post
+Note:- For metamask login you have to first call get_user_captcha api, In this api call you have to send web3_address
+(public_address of metamask wallet account which is selected by user it should be only one)
+***This api is handling only one metamask wallet account at a time***
+Request :
+{
+    "web3_address":"0x825fe4Ec04917E1a13467F300f780f3b10C9aB46"
+}
+
+Response:
+{
+    "data": {
+        "captcha": "f3TceviPVeBNKfraBGaEPuSeRwfuPQBbaVZ"
+    },
+    "message": "successfully executed!"
+}
+-------------------------------------
+Request URL: http://127.0.0.1:8000/metamask_login/
+Note:- In this API from frontend we have to send 2 things signature and web3_address. In frontend we have to create signature which is a combination of captcha and web3_address(public address of metamask wallet account).
+
+Request Method: Post
+Request Body:
+{
+    "signature":"0x83fe857b42768f475a5ecf94de137522438066a06d2f1fdd5fe7269ce0226f45570b3372ce945c21ad819ea32bdecf79c55a16b2de791bb514201652ab70e3b11c",
+    "web3_address":"0x825fe4Ec04917E1a13467F300f780f3b10C9aB46"
+}
+Response:
+{
+    "message": "success",
+    "data": {
+        "id": 7,
+        "full_name": "metamaskrqw",
+        "username": "metamaskrqw65021",
+        "email": "metamaskrqw@mail.com",
+        "profile_image": null
+    },
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcxMzA5Mzg4NSwiaWF0IjoxNzEwNTAxODg1LCJqdGkiOiI1YWNiMzI2YjA5YjA0MjczOTUzNGFjNmVmODFmODA3ZSIsInVzZXJfaWQiOjd9.hJCSeNm_pEbhqdnC17qTxUgnAvYzk4CTVHTUWCgIUZ0",
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzExNzk3ODg1LCJpYXQiOjE3MTA1MDE4ODUsImp0aSI6IjkxZTQ5MjE3NWFjMTRmYTZiMGZhZDk4OTk5MDQ5NjM0IiwidXNlcl9pZCI6N30.fEO_1GFVQoBjgPlaYRERb1sq2iLZzJOvBt1fNcyQ4hI"
+}
+--------------------------------------------

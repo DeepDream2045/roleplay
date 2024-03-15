@@ -67,6 +67,8 @@ class CustomUser(AbstractBaseUser, BaseModel, PermissionsMixin):
     stay_sign = models.BooleanField(default=False, null=True, blank=True)
     provider = models.CharField(
         max_length=60, default='magic link', null=True, blank=True)
+    web3_address = models.CharField(
+        max_length=100, unique=True, null=True, blank=True)
 
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -401,3 +403,28 @@ class AdapterChatMessage(TimeStampedModel):
 
     def __str__(self):
         return f"{self.adapter_chatroom.user.full_name}"
+
+
+class MetaMaskTransactionHistory(TimeStampedModel):
+    """creating MetaMask Transaction History table for store Transaction data"""
+
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='user_transactions')
+    sender = models.CharField(max_length=100)
+    receiver = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
+    status = models.CharField(max_length=20)
+    transaction_hash = models.CharField(max_length=100, blank=True, null=True)
+    method = models.CharField(max_length=50, default='')
+
+    def __str__(self):
+        return f"Transaction {self.id} - {self.user.username} to {self.receiver}"
+
+
+class UserCaptcha(TimeStampedModel):
+    captcha = models.CharField(max_length=100)
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='metamask_login')
+
+    def __str__(self):
+        return str(self.captcha)
