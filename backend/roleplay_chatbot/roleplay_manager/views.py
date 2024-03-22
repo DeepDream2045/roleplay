@@ -144,7 +144,7 @@ class LoginView(APIView):
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception:
+        except Exception as error:
             logger.info(f"{datetime.now()} :: LoginView post error :: {error}")
             return Response({"error": "Invalid Email or password"}, status=status.HTTP_400_BAD_REQUEST)
 
