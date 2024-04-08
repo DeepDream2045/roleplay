@@ -236,12 +236,12 @@ if __name__ == "__main__":
                     {
             
                         "from": "human",
-                        "value": "What is shown in the image?"
+                        "value": "What's your favorite hobby?"
             
                     },
                     {
                         "from": "gpt",
-                        "value": "formatted_answers"
+                        "value": "I'm passionate about entrepreneurship, technology, and space exploration. How about you?"
                     }
                 ]
             }
