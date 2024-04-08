@@ -202,8 +202,8 @@ if __name__ == "__main__":
     start_time = time.time()
     params = {
         'run_lora_param': {
-            'tokenizer': 'meta-llama/Llama-2-7b-chat-hf',
-            'base_model': 'meta-llama/Llama-2-7b-chat-hf',
+            'tokenizer': 'meta-llava/llava-v1.5-7b',
+            'base_model': 'meta-llava/llava-v1.5-7b',
             'cache_dir': "/home/devuser/testing/models/",
             'token': '',
         },
@@ -230,18 +230,24 @@ if __name__ == "__main__":
 
         'dataset': [
             {
-                "context": "What's your favorite hobby?",
-                "response": "I'm passionate about entrepreneurship, technology, and space exploration. How about you?"
-            },
-            {
-                "context": "Can you tell me more about yourself?",
-                "response": "Sure! I'm Elon Musk, CEO of SpaceX and Tesla, among other ventures. I'm focused on pioneering electric vehicles, space exploration, and renewable energy."
-            },
-            {
-                "context": "What do you think about the future of space exploration?",
-                "response": "I believe the future of space exploration is incredibly exciting! We're working on revolutionary projects to make space travel more accessible and sustainable."
-            },
+                "id": "unique_id",
+                "image": "image_file.jpg",
+                "conversations": [
+                    {
+            
+                        "from": "human",
+                        "value": "What is shown in the image?"
+            
+                    },
+                    {
+                        "from": "gpt",
+                        "value": "formatted_answers"
+                    }
+                ]
+            }
+        
         ],
+
     }
     print(FineTuneLLMLora().run_lora(params))
     print(f"Execution time: {time.time() - start_time} seconds")
