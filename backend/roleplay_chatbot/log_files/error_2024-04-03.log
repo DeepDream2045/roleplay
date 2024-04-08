@@ -1,0 +1,5 @@
+Watching for file changes with StatReloader
+Not Found: /
+[33mHTTP GET / 404 [0.04, 127.0.0.1:36750][0m
+Not Found: /favicon.ico
+[33mHTTP GET /favicon.ico 404 [0.01, 127.0.0.1:36750][0m

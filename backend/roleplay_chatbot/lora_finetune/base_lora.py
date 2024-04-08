@@ -1,5 +1,5 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
-from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_int8_training
+from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
 from trl import SFTTrainer
 import torch
 import gc
@@ -116,7 +116,7 @@ class LoraModel():
     def init_lora(self, lora_config):
         try:
             self.lora_model_ = get_peft_model(self.base_model_, lora_config)
-            self.lora_model_ = prepare_model_for_int8_training(
+            self.lora_model_ = prepare_model_for_kbit_training(
                 self.lora_model_)
         except:
             self.lora_model_ = None

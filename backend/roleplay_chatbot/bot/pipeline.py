@@ -6,9 +6,9 @@ try:
     from bot.load_models import load_llm_model_langchain
     from bot.constants import *
 except Exception as error:
-    from prompt_template_utils import *
-    from load_models import load_llm_model_langchain
-    from constants import *
+    from bot.prompt_template_utils import *
+    from bot.load_models import load_llm_model_langchain
+    from bot.constants import *
     print("pipeline error: ", error)
 import gc
 gc.collect()

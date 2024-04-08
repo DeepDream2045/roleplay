@@ -40,17 +40,53 @@ def validate_folder(folder_path):
 
 
 class FineTuneLLMLora:
-    def prep_data(self, data):
-        # Convert to pandas dataframe for convenient processing
-        rd_df = pd.DataFrame.from_records(data)
+    def prepare_llava_dataset(dataset, output_folder):
+        # Initialize list to hold all JSON data
+        json_data_list = []
 
-        # Define template and format data into the template for supervised fine-tuning
-        template = """Below is an instruction that describes a task. Write a response that appropriately completes the request.\n"""
-        template = template + """\n### Context:\n{} """
-        rd_df['prediction'] = rd_df["context"].apply(
-            lambda x: template.format(x))
-        rd_df.drop(columns=['context'], inplace=True)
-        return Dataset.from_dict(rd_df)
+        # Process each item in the dataset
+        for item in dataset:
+            # Create a unique ID for each example
+            unique_id = str(uuid.uuid4())
+
+            # Get the image filename and URL
+            image_url = item["image"]
+            image_filename = f"{unique_id}.jpg"
+
+            # Download and save the image
+            response = requests.get(image_url)
+            image_path = os.path.join(output_folder, 'images', image_filename)
+            if not os.path.exists(os.path.dirname(image_path)):
+                os.makedirs(os.path.dirname(image_path))
+            with open(image_path, 'wb') as image_file:
+                image_file.write(response.content)
+
+            # Remove duplicates and format answers
+            answers = item['answers']
+            unique_answers = list(set(answers))
+            formatted_answers = ", ".join(unique_answers)
+
+            # Structure for LLaVA JSON
+            json_data = {
+                "id": unique_id,
+                "image": image_filename,
+                "conversations": [
+                    {
+                        "from": "human",
+                        "value": item['question']
+                    },
+                    {
+                        "from": "gpt",
+                        "value": formatted_answers
+                    }
+                ]
+            }
+
+            # Append to list
+            json_data_list.append(json_data)
+
+        # Return the data in the Dataset format similar to HuggingFace's 'datasets'
+        return Dataset.from_dict({'data': json_data_list})
 
     def create_quant_config(self):
         return BitsAndBytesConfig(
@@ -123,7 +159,7 @@ class FineTuneLLMLora:
         tokenizer.save_pretrained(target_model_path)
 
     def train_model(self, adaptor, dataset):
-        adaptor.train_data = self.prep_data(dataset)
+        adaptor.train_data = self.prepare_llava_dataset(dataset)
         adaptor.train()
 
     def exe_lora_training(self, shared_list, params):
